@@ -8,6 +8,7 @@ from pyspark.sql.types import StructField, StringType, StructType
 from warcio import ArchiveIterator
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
+import tldextract
 
 
 schema = StructType([
@@ -61,6 +62,7 @@ def get_external_links(html_content, parentTLD, parent):
     Extract links from the HTML
     """
     link_list = []
+    unique_map = {}
     parser = BeautifulSoup(html_content, features="html.parser")
 
     # Find all hrefs under the 'a' html tag
@@ -73,13 +75,26 @@ def get_external_links(html_content, parentTLD, parent):
             if href:
                 href_parsed = urlparse(href)
                 get_domain = href_parsed.netloc
-                if parentTLD not in get_domain:
-                    if get_domain not in link_list and href.startswith("http"):
+
+                try:
+                    parents_children = unique_map[parentTLD]
+                except KeyError:
+                    unique_map[parentTLD] = {}
+                    parents_children = unique_map[parentTLD]
+
+                parent_domain = tldextract.extract(parentTLD)
+                child_domain = tldextract.extract(get_domain)
+
+                if parent_domain.domain != child_domain.domain:
+                    if (href.startswith("http") or href.startswith("http")) and href not in parents_children:
+                    # if get_domain not in link_list and href.startswith("http"):
                         childTLD = get_domain
                         child = href
 
                         # print("[*] Found external link: {}".format(href))
                         link_list.append((parent, parentTLD, childTLD, child))
+
+                        parents_children[href] = None
 
     return link_list
 
@@ -91,7 +106,7 @@ def main(input_file, output_file):
     partition_mapped = input_data.mapPartitionsWithIndex(process_warcs)
     mapped = partition_mapped.flatMap(lambda x: x)
 
-    df = spark.createDataFrame(mapped, schema=schema).coalesce(1)
+    df = spark.createDataFrame(mapped, schema=schema).coalesce(1).distinct()
     df.write.format("parquet").saveAsTable(output_file)
 
     print('OUTDATA', mapped.take(5))
