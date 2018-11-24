@@ -128,3 +128,6 @@ bootstrap reads from your local files in parallel.
 TODO:
 - [ ] Extend `process_warcs` to S3
 - [ ] Add `requirements.txt`
+
+To run the Spark shell with the GraphFrames package
+    use `spark-submit --packages graphframes:graphframes:0.6.0-spark2.3-s_2.11 analysis.py`
