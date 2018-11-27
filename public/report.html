@@ -1,0 +1,275 @@
+<!-- python -m SimpleHTTPServer/ python3 -m http.server //-->
+
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Community Clustering of Web Graph Data using PySpark</title>
+
+    <!-- JavaScript Libraries //-->
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+
+    <!-- CSS Style //-->
+    <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,900|Source+Code+Pro:300">
+    <link rel="stylesheet" type="text/css" href="style.css">
+
+    <script>
+        var width = 960;
+        var height = 700;
+
+        var margin = 20;
+        var pad = margin / 2;
+        var color = d3.scale.category20();
+        // Generates a tooltip for a SVG circle element based on its ID
+        function addTooltip(circle) {
+            var x = parseFloat(circle.attr("cx"));
+            var y = parseFloat(circle.attr("cy"));
+            var r = parseFloat(circle.attr("r"));
+            var text = circle.attr("id");
+            var tooltip = d3.select("#plot")
+                .append("text")
+                .text(text)
+                .attr("x", x)
+                .attr("y", y)
+                .attr("dy", -r * 2)
+                .attr("id", "tooltip");
+            var offset = tooltip.node().getBBox().width / 2;
+            if ((x - offset) < 0) {
+                tooltip.attr("text-anchor", "start");
+                tooltip.attr("dx", -r);
+            }
+            else if ((x + offset) > (width - margin)) {
+                tooltip.attr("text-anchor", "end");
+                tooltip.attr("dx", r);
+            }
+            else {
+                tooltip.attr("text-anchor", "middle");
+                tooltip.attr("dx", 0);
+            }
+        }
+        var vis = d3.select("#chart")
+            .append("svg:svg")
+            .attr("width", width)
+            .attr("height", height)
+            .attr("pointer-events", "all")
+            .append('svg:g')
+            .call(d3.behavior.zoom().on("zoom", redraw))
+            .append('svg:g');
+        vis.append('svg:rect')
+            .attr('width', width)
+            .attr('height', height)
+            .attr('fill', 'white');
+        function redraw() {
+            console.log("here", d3.event.translate, d3.event.scale);
+            vis.attr("transform",
+                "translate(" + d3.event.translate + ")"
+                + " scale(" + d3.event.scale + ")");
+        }
+        function drawGraph(graph) {
+            var svg = d3.select("#force").append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            // var svg = d3.select("#force").append("svg")
+            //     .attr("preserveAspectRatio", "xMinYMin meet")
+            //     .attr("viewBox", "0 0 960 600")
+            //     .classed("svg-content", true)
+                // .attr("width", width)
+                // .attr("height", height);
+            // draw plot background
+            svg.append("rect")
+                .attr("width", width)
+                .attr("height", height)
+                .style("fill", "#eeeeee");
+            // create an area within svg for plotting graph
+            var plot = svg.append("g")
+                .attr("id", "plot")
+                .attr("transform", "translate(" + pad + ", " + pad + ")");
+            var layout = d3.layout.force()
+                .size([width - margin, height - margin])
+                .charge(-20)
+                .linkDistance(function(d, i) {
+                    return (d.source.group == d.target.group) ? 10 : 20;
+                })
+                .nodes(graph.nodes)
+                .links(graph.links)
+                .start();
+            drawLinks(graph.links);
+            drawNodes(graph.nodes);
+            // add ability to drag and update layout
+            d3.selectAll(".node").call(layout.drag);
+            layout.on("tick", function() {
+                d3.selectAll(".link")
+                    .attr("x1", function(d) { return d.source.x; })
+                    .attr("y1", function(d) { return d.source.y; })
+                    .attr("x2", function(d) { return d.target.x; })
+                    .attr("y2", function(d) { return d.target.y; });
+                d3.selectAll(".node")
+                    .attr("cx", function(d) { return d.x; })
+                    .attr("cy", function(d) { return d.y; });
+            });
+        }
+        function tick(e) {
+            // Push different nodes in different directions for clustering.
+            var k = 6 * e.alpha;
+            graph.nodes.forEach(function (o, i) {
+                o.y += i & 1 ? k : -k;
+                o.x += i & 2 ? k : -k;
+            });
+            node.attr("cx", function (d) { return d.x; })
+                .attr("cy", function (d) { return d.y; });
+        }
+        // Draws nodes on plot
+        function drawNodes(nodes) {
+            // used to assign nodes color by group
+            var color = d3.scale.category20();
+            d3.select("#plot").selectAll(".node")
+                .data(nodes)
+                .enter()
+                .append("circle")
+                .attr("class", "node")
+                .attr("id", function(d, i) { return d.name; })
+                .attr("cx", function(d, i) { return d.x; })
+                .attr("cy", function(d, i) { return d.y; })
+                .attr("r",  function(d, i) { return 4; })
+                .style("fill",   function(d, i) { return color(d.group); })
+                .on("mouseover", function(d, i) { addTooltip(d3.select(this)); })
+                .on("mouseout",  function(d, i) { d3.select("#tooltip").remove(); });
+        }
+        // Draws edges between nodes
+        function drawLinks(links) {
+            var scale = d3.scale.linear()
+                .domain(d3.extent(links, function(d, i) {
+                return d.value;
+                }))
+                .range([1, 6]);
+            d3.select("#plot").selectAll(".link")
+                .data(links)
+                .enter()
+                .append("line")
+                .attr("class", "link")
+                .attr("x1", function(d) { return d.source.x; })
+                .attr("y1", function(d) { return d.source.y; })
+                .attr("x2", function(d) { return d.target.x; })
+                .attr("y2", function(d) { return d.target.y; })
+                .style("stroke-width", function(d, i) {
+                    return scale(d.value) + "px";
+                })
+                .style("stroke-dasharray", function(d, i) {
+                    return (d.value <= 1) ? "2, 2" : "none";
+                });
+        }
+    </script>
+</head>
+
+<body>
+    <h1>Problem Definition</h1>
+    <p>
+        In our final project, we look to apply big data techniques to perform large-scale
+        graph mining on web crawl data. We utilize the <a href="http://commoncrawl.org/the-data/">
+        Common Crawl</a> web dataset, which is an open dataset hosted on Amazon Web Services' cloud
+        platform. This is an extremely large dataset that consists of petabytes of web crawl
+        data. Our particular problem looks at identifying communities (or clusters) of related
+        web pages utilizing nothing but the URL information and the links between them, using 
+        web graphs built from the crawl data. Our work is inspired by 
+        <a href="https://towardsdatascience.com/large-scale-graph-mining-with-spark-part-2-2c3d9ed15bb5">
+        this introductory Medium blog post</a> on this topic.</a>
+    <p>
+    <p>
+        Graphs are a fundamental type of data structure that utilize the underlying
+        substructures in the data to capture relationships between its objects. In the 
+        recent years, there have been many interesting applications of graph analysis 
+        on datasets in biology, sociology and computer science. In the field of machine
+        learning, graphs are especially important of unsupervised learning, especially clustering.
+        Recently, the availability of big data tools combined with freely available open datasets
+        and relevant example code on GitHub has enabled widespread graph analysis in a host of real-world applications.
+    </p>
+    <p>
+        A graph is a very simple data structure, represented by <i>vertices</i> and <i>edges</i>, which
+        can be directed or undirected. In our case, since we are analyzing the relationship between
+        web URLs by just using the links that they connect to, we will be looking at undirected 
+        graphs, where each web page is a <i>vertex</i>, and each <i>href</i>, or outgoing link from one 
+        web page to another, is an <i>edge</i>. 
+    </p>
+
+    <h1>Methodology</h1>
+    <p>
+        To analyze the structure of web graphs from the Common Crawl data, we use the following
+        steps:
+        <ol>
+            <li>Extract relevant URLs using the href tags from the relevant HTML content from the 
+                WARC data in Common Crawl's database.</li>
+            <li>Define a graph structure using vertices (each parent domain) and edges (links between two vertices).</li>
+            <li>Run community detection and other kinds of analysis on the graph (described below).</li>
+            <li>Visualize the graph and the linked entities using a graphical technique, such as <i>force-directed graphs.</i></li>
+        </ol>
+    </p>
+    <p>
+        We utilize <a href="https://graphframes.github.io/quick-start.html">GraphFrames</a> in PySpark to 
+        perform the heavy-lifting for graph analysis, since we are dealing with a <i>very</i> large dataset (several hundred GB).   
+        To help avoid large network file transfers, we aim to extend this approach to access the data via Amazon
+        Web Services' <a href="https://docs.aws.amazon.com/AmazonS3/latest/dev/Welcome.html">S3</a> interface.
+        All the data cleaning and URL extraction code is written in Python, and the graph structure visualization is
+        done using the <a href="https://d3js.org/">D3.js</a> library. Once we have an initial proof of concept,
+        we can look at extending this approach to utilize more powerful graph visualization databases such as 
+        <a href="https://neo4j.com/">Neo4j</a>. 
+    </p>
+
+    <h2>Label Propagation Analysis</h2>
+    <p>
+        <a href="https://arxiv.org/pdf/0709.2938.pdf">Label propagation analysis (LPA)</a> is a very useful technique in studying the
+        relationship between the vertices of a graph. In beginning our analysis, we performed an extensive literature 
+        survey on the various available methods to perform community detection for studying web graphs. 
+        <a href="https://arxiv.org/pdf/0906.0612.pdf">This paper by Santo Fortunato</a> discusses in detail the different
+        clustering techniques used in graph analysis, and their applications in real-world problems in biology, sociology, etc.
+    </p>
+    <p>
+        The key benefit of LPA over other techniques for graph clustering is that it requires no prior information about 
+        the communities beforehand, nor does it need a specific optimization objective. It utilizes a <i>label</i>, which in our case 
+        is a unique identifier assigned to each vertex (or web domain name) in our graph. At the start, all vertices of the graph are 
+        assigned their own unique identifiers, but as we perform an iterative update of the vertex labels, each vertex takes on the 
+        label of the one that majority of its neighbors shares. "Convergence" of the algorithm is achieved once each vertex's label
+        has a similar label to its neighbor. In a large enough graph, this difference in label is sufficient to see how closely
+        or distantly two vertices should lie, and this tells us something about their relationship.
+    </p>
+    
+
+    <h1>Problems</h1>
+    <p>
+        We faced a number of problems while initially deciding our approach to this problem. Some of these tasks are listed 
+        below.
+        <ol>
+            <li>Filter out "useless" href data from large HTML dumps</li>
+            <li>Avoid domains linking to themselves (this creates many duplicates)</li>
+            <li>Find ways to filter out domains of interest before performing the community clustering</li>
+            <li>Visualize a huge PySpark DataFrame in a way that allows us to understand the graph structure</li>
+        </ol>
+        We stood on the shoulders of the people who have tackled this problem before us, and wrote some of our own code to help 
+        develop a pipeline that we hope can be easily extended based on need. 
+    </p>
+
+    <h1>Results</h1>
+    Once we ran our LPA analysis using PySpark GraphFrames, we pipe a condensed version of the output to a JSON file, which is used
+    as input to D3 for graph visualization.
+    <h2>Force Clustering in D3</h2>
+    D3 has some very useful utilities to help visualize graph structures. One technique that proved useful in our analysis was 
+    <a href="https://github.com/d3/d3-force">"force-directed graphs"</a>. In this approach, we run a simple physics emulator for 
+    positioning the vertices of the graph visually such that "forces" exist between elements. Elements that are closely connected in
+    the graph (i.e. share the same label from LPA) attract one another, whereas elements that are very different in their labels repel
+    one another. Visualizing the graph this way allows us to more easily pick up and identify communities of interest. 
+    For example, domain names like "facebook.com" and "twitter.com" are more heavily connected to other domains, and these vertices 
+    form central points in the graph, which is easily visible upon prelimilary inspection. 
+    <br>
+
+    <div align="center" id="force" class="svg-container"></div>
+
+    <script>
+        d3.json("community-graph.json", drawGraph);
+    </script>
+
+    <h1>Summary and Further Work</h1>
+    TODO: Write summary once we complete analysis
+
+</body>
+
+</html>

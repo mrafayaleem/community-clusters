@@ -1,6 +1,21 @@
 body {
-    font-family: 'Source Sans Pro', sans-serif;
+    font-family: 'Roboto', sans-serif;
     font-weight: 300;
+    counter-reset: heading;
+}
+
+h1:before {
+    content: counter(heading) ".\0000a0\0000a0";
+    counter-increment: heading;
+}
+
+h1 {
+    counter-reset: subheading;
+}
+
+h2:before {
+    content: counter(heading)"." counter(subheading) ".\0000a0";
+    counter-increment: subheading;
 }
 
 b {
