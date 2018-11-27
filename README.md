@@ -8,10 +8,9 @@ To generate the parquet files to ```test/``` from the common crawl data:
 
 To inspect the parquet file, open up Pyspark shell and run:
 
-```pyspark
-df = sqlContext.read.parquet("spark-warehouse/test")
-df.show()
-df.count()
+```
+$ pyspark
+>>> df = sqlContext.read.parquet("spark-warehouse/test")
 ```
 
 Sample:
@@ -19,7 +18,7 @@ Sample:
 In [3]: df.count()
 Out[3]: 5673
 
-In [4]: df.show(100)
+In [4]: df.show(10)
 +--------------------+--------------+-------------------+--------------------+
 |              parent|     parentTLD|           childTLD|               child|
 +--------------------+--------------+-------------------+--------------------+
