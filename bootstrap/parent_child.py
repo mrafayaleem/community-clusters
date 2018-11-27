@@ -1,5 +1,6 @@
 import sys
 import os
+import re
 
 from pyspark import SparkContext, SparkConf
 from pyspark.sql import SQLContext
@@ -8,8 +9,6 @@ from pyspark.sql.types import StructField, StringType, StructType
 from warcio import ArchiveIterator
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
-import tldextract
-
 
 schema = StructType([
     StructField('parent', StringType()),
@@ -32,7 +31,7 @@ def process_warcs(i_, iterator):
 
         try:
             stream = open(uri, 'rb')
-        except IOError as exception:
+        except IOError:
             continue
 
         for record in ArchiveIterator(stream):
@@ -50,7 +49,7 @@ def process_record(record):
 
         parsed = urlparse(target_uri)
         parent = parsed.scheme + '://' + parsed.netloc
-        parentTLD = parsed.netloc
+        parentTLD = rec.sub('', parsed.netloc).strip()
 
         return get_external_links(html, parentTLD, parent)
     else:
@@ -82,18 +81,15 @@ def get_external_links(html_content, parentTLD, parent):
                     unique_map[parentTLD] = {}
                     parents_children = unique_map[parentTLD]
 
-                parent_domain = tldextract.extract(parentTLD)
-                child_domain = tldextract.extract(get_domain)
+                parent_domain = rec.sub('', parentTLD).strip().split('.')[0]
+                child_domain = rec.sub('', get_domain).strip().split('.')[0]
 
-                if parent_domain.domain != child_domain.domain:
+                if parent_domain != child_domain:
                     if (href.startswith("http") or href.startswith("http")) and href not in parents_children:
                     # if get_domain not in link_list and href.startswith("http"):
-                        childTLD = get_domain
+                        childTLD = rec.sub('', get_domain).strip()
                         child = href
-
-                        # print("[*] Found external link: {}".format(href))
                         link_list.append((parent, parentTLD, childTLD, child))
-
                         parents_children[href] = None
 
     return link_list
@@ -118,7 +114,7 @@ if __name__ == '__main__':
         ("spark.locality.wait", "20s"),
         ("spark.serializer", "org.apache.spark.serializer.KryoSerializer"),
     ))
-
+    rec = re.compile(r"(https?://)?(www\.)?") # Regex to clean parent/child links
     sc = SparkContext(appName='etl', conf=conf)
     spark = SQLContext(sparkContext=sc)
 
