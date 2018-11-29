@@ -128,9 +128,10 @@ def get_external_links(html_content, parentTLD, parent):
     return link_list
 
 
-def main(input_file, output_file, file_system, to_crawl_data):
-    input_data = sc.textFile(input_file)
-    print('INDATA', input_data.collect())
+def main(input_file, output_file, file_system, to_crawl_data, sample):
+    warcPaths = sc.textFile(input_file)
+    #print('INDATA', input_data.collect())
+    input_data = sc.parallelize(warcPaths.takeSample(False, sample))
 
     if(file_system=="s3"):
         input_data = input_data.map(lambda p: "s3://" + to_crawl_data + "/" + p)
@@ -142,10 +143,10 @@ def main(input_file, output_file, file_system, to_crawl_data):
     partition_mapped = input_data.mapPartitionsWithIndex(process_warcs)
     mapped = partition_mapped.flatMap(lambda x: x)
 
-    df = spark.createDataFrame(mapped, schema=schema).coalesce(1).distinct()
+    df = spark.createDataFrame(mapped, schema=schema).distinct()
     df.write.format("parquet").saveAsTable(output_file)
 
-    print('OUTDATA', mapped.take(5))
+    #print('OUTDATA', mapped.take(5))
 
 
 if __name__ == '__main__':
@@ -162,5 +163,6 @@ if __name__ == '__main__':
     output_file = sys.argv[2]
     file_system = sys.argv[3]
     to_crawl_data = sys.argv[4]
+    sample = int(sys.argv[5])
 
-    main(input_file, output_file, file_system, to_crawl_data)
+    main(input_file, output_file, file_system, to_crawl_data, sample)
