@@ -4,7 +4,7 @@ Contains a bootstrap ETL to generate a parquet file of records from a single WAR
 
 To generate the parquet files to ```test/``` from the common crawl data:
 
-    $ spark-submit parent_child.py input/test_warc.txt test
+    $ spark-submit parent_child.py input/test_warc.txt <output> <filesystem> <s3bucket/localPath> <sample size>
 
 To inspect the parquet file, open up Pyspark shell and run:
 
@@ -46,8 +46,12 @@ To run the Spark shell with the GraphFrames package:
 
 
 TODO:
-- [ ] Extend `process_warcs` to S3
+- [Done] Extend `process_warcs` to S3
 - [ ] Add `requirements.txt`
+- [ ] use distinct in parent/child domains for analysis
+- [ ] analyse the popularity of these domains
+- [ ] analysis around the paths of the popular domains
+- [ ] visualize the poplularity  
 
 To run analysis on the Spark shell with the GraphFrames package
     use `spark-submit --packages graphframes:graphframes:0.6.0-spark2.3-s_2.11 analysis.py`
