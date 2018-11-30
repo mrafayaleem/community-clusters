@@ -95,7 +95,7 @@ def get_external_links(html_content, parentTLD, parent):
     """
     link_list = []
     unique_map = {}
-    parser = BeautifulSoup(html_content, features="html.parser")
+    parser = BeautifulSoup(html_content, features="html.parser", from_encoding="iso-8859-1")
 
     # Find all hrefs under the 'a' html tag
     links = parser.find_all('a')
@@ -136,7 +136,7 @@ def main(input_file, output_file, file_system, to_crawl_data, sample):
     if(file_system=="s3"):
         input_data = input_data.map(lambda p: "s3://" + to_crawl_data + "/" + p)
     elif(file_system=="file"):
-        input_data = input_data.map(lambda p: "file:" + to_crawl_data + "/" + p)  
+        input_data = input_data.map(lambda p: "file:" + to_crawl_data + "/" + p)
     else:
         print("file system not found.")
 
