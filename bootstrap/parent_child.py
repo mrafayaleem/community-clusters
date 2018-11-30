@@ -3,7 +3,7 @@ import os
 import re
 
 from pyspark import SparkContext, SparkConf
-from pyspark.sql import SQLContext
+from pyspark.sql import SQLContext, functions
 from pyspark.sql.types import StructField, StringType, StructType
 
 from warcio import ArchiveIterator
@@ -11,6 +11,7 @@ from warcio.recordloader import ArchiveLoadFailed
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 
+import tldextract
 import boto3
 import botocore
 from io import BytesIO
@@ -23,6 +24,11 @@ schema = StructType([
     StructField('childTLD', StringType()),
     StructField('child', StringType())
 ])
+
+
+@functions.udf(returnType=StringType())
+def url_to_domain(url):
+    return tldextract.extract(url).domain
 
 
 def process_warcs(i_, iterator):
@@ -144,6 +150,11 @@ def main(input_file, output_file, file_system, to_crawl_data, sample):
     mapped = partition_mapped.flatMap(lambda x: x)
 
     df = spark.createDataFrame(mapped, schema=schema).distinct()
+
+    # Extract child and parent domains so we can easily use asin filtering
+    df = df.select(
+        '*', url_to_domain('childTLD').alias('childDomain'), url_to_domain('parentTLD').alias('parentDomain'))
+
     df.write.format("parquet").saveAsTable(output_file)
 
     #print('OUTDATA', mapped.take(5))
@@ -155,7 +166,7 @@ if __name__ == '__main__':
         ("spark.locality.wait", "20s"),
         ("spark.serializer", "org.apache.spark.serializer.KryoSerializer"),
     ))
-    rec = re.compile(r"(https?://)?(www\.)?") # Regex to clean parent/child links
+    rec = re.compile(r"(https?://)?(www\.)?")  # Regex to clean parent/child links
     sc = SparkContext(appName='etl', conf=conf)
     spark = SQLContext(sparkContext=sc)
 
