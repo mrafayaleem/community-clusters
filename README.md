@@ -47,3 +47,14 @@ To run the Spark shell with the GraphFrames package:
 
 TODO:
 - [ ] Extend `process_warcs` to S3
+- [ ] Add `requirements.txt`
+
+To run analysis on the Spark shell with the GraphFrames package
+    use `spark-submit --packages graphframes:graphframes:0.6.0-spark2.3-s_2.11 analysis.py`
+
+To plot community clusters after analysis
+    use `python3 plot_communities.py`
+
+To view communities detected on a browser
+    use `python3 -m http.server 8000` or `python -m SimpleHTTPServer 8000`
+    then open `localhost:8000/public/index.html` in the browser
