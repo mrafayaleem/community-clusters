@@ -5,6 +5,10 @@ THRESHOLD = 10
 TEMP_PATH = 'temp'
 
 
+if not os.path.exists(TEMP_PATH):
+    os.makedirs(TEMP_PATH)
+
+
 def main():
 
     with open('input/test_warc.txt') as fp:
