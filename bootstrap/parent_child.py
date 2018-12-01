@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import sys
 import os
 import re
@@ -69,7 +69,7 @@ def process_warcs(i_, iterator):
                 print("Failed to read data from local")
                 continue
         else:
-            print("Unknowm file system")
+            print("Unknown file system")
 
         try:
             for record in ArchiveIterator(stream):
@@ -122,8 +122,8 @@ def get_external_links(html_content, parentTLD, parent):
                     unique_map[parentTLD] = {}
                     parents_children = unique_map[parentTLD]
 
-                parent_domain = rec.sub('', parentTLD).strip().split('.')[0]
-                child_domain = rec.sub('', get_domain).strip().split('.')[0]
+                parent_domain = tldextract.extract(parentTLD).domain
+                child_domain = tldextract.extract(get_domain).domain
 
                 if parent_domain != child_domain:
                     if (href.startswith("http") or href.startswith("http")) and href not in parents_children:
@@ -136,8 +136,10 @@ def get_external_links(html_content, parentTLD, parent):
     return link_list
 
 
-def main(input_file, output_file, file_system, to_crawl_data):
-    input_data = sc.textFile(input_file)
+def main(input_file, output_file, file_system, to_crawl_data, sample):
+    warcPaths = sc.textFile(input_file)
+    #print('INDATA', input_data.collect())
+    input_data = sc.parallelize(warcPaths.takeSample(False, sample))
 
     if(file_system=="s3"):
         input_data = input_data.map(lambda p: "s3://" + to_crawl_data + "/" + p)
@@ -157,6 +159,8 @@ def main(input_file, output_file, file_system, to_crawl_data):
 
     df.write.format("parquet").saveAsTable(output_file)
 
+    #print('OUTDATA', mapped.take(5))
+
 
 if __name__ == '__main__':
     conf = SparkConf().setAll((
@@ -165,15 +169,16 @@ if __name__ == '__main__':
         ("spark.serializer", "org.apache.spark.serializer.KryoSerializer"),
     ))
     rec = re.compile(r"(https?://)?(www\.)?")  # Regex to clean parent/child links
-    sc = SparkContext(appName='etl', conf=conf)
+    sc = SparkContext(appName='etl-common-crawl', conf=conf)
     spark = SQLContext(sparkContext=sc)
 
     parser = argparse.ArgumentParser(description='Perform ETL on CommonCrawl')
-    parser.add_argument('input', type=str, help='Input path')
+    parser.add_argument('input', type=str,  help='Input path')
     parser.add_argument('output', type=str, help='Output path')
     parser.add_argument('file_type', type=str, help='file or s3')
     parser.add_argument('crawl_path', type=str, help='file path or bucket name in case of s3')
+    parser.add_argument('sample_size', type=int, help='number of warcs to crawl')
 
     args = parser.parse_args()
 
-    main(args.input, args.output, args.file_type, args.crawl_path)
+    main(args.input, args.output, args.file_type, args.crawl_path, args.sample_size)
