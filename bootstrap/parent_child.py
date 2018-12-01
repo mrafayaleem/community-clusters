@@ -1,6 +1,7 @@
 import sys
 import os
 import re
+import argparse
 
 from pyspark import SparkContext, SparkConf
 from pyspark.sql import SQLContext, functions
@@ -170,10 +171,13 @@ if __name__ == '__main__':
     sc = SparkContext(appName='etl', conf=conf)
     spark = SQLContext(sparkContext=sc)
 
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
-    file_system = sys.argv[3]
-    to_crawl_data = sys.argv[4]
-    sample = int(sys.argv[5])
+    parser = argparse.ArgumentParser(description='Perform ETL on CommonCrawl')
+    parser.add_argument('input', type=str, help='Input path')
+    parser.add_argument('output', type=str, help='Output path')
+    parser.add_argument('file_type', type=str, help='file or s3')
+    parser.add_argument('crawl_path', type=str, help='file path or bucket name in case of s3')
+    parser.add_argument('sample_size', type=int, help='file path or bucket name in case of s3')
 
-    main(input_file, output_file, file_system, to_crawl_data, sample)
+    args = parser.parse_args()
+
+    main(args.input, args.output, args.file_type, args.crawl_path, args.sample_size)
