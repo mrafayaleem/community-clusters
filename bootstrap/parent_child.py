@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import sys
 import os
 import re
@@ -135,10 +136,8 @@ def get_external_links(html_content, parentTLD, parent):
     return link_list
 
 
-def main(input_file, output_file, file_system, to_crawl_data, sample):
-    warcPaths = sc.textFile(input_file)
-    #print('INDATA', input_data.collect())
-    input_data = sc.parallelize(warcPaths.takeSample(False, sample))
+def main(input_file, output_file, file_system, to_crawl_data):
+    input_data = sc.textFile(input_file)
 
     if(file_system=="s3"):
         input_data = input_data.map(lambda p: "s3://" + to_crawl_data + "/" + p)
@@ -158,8 +157,6 @@ def main(input_file, output_file, file_system, to_crawl_data, sample):
 
     df.write.format("parquet").saveAsTable(output_file)
 
-    #print('OUTDATA', mapped.take(5))
-
 
 if __name__ == '__main__':
     conf = SparkConf().setAll((
@@ -176,8 +173,7 @@ if __name__ == '__main__':
     parser.add_argument('output', type=str, help='Output path')
     parser.add_argument('file_type', type=str, help='file or s3')
     parser.add_argument('crawl_path', type=str, help='file path or bucket name in case of s3')
-    parser.add_argument('sample_size', type=int, help='file path or bucket name in case of s3')
 
     args = parser.parse_args()
 
-    main(args.input, args.output, args.file_type, args.crawl_path, args.sample_size)
+    main(args.input, args.output, args.file_type, args.crawl_path)
