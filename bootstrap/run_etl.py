@@ -40,7 +40,7 @@ def main():
         input = TEMP_PATH + '/t{0}'.format(i)
         os.system(command.format(
             input=input,
-            output=args.output,
+            output=args.output + str(i),
             file_type=args.file_type,
             crawl_path=args.crawl_path
         ))
