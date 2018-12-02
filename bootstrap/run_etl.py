@@ -33,7 +33,7 @@ def main():
             tout = []
 
     command = """
-    $SPARK_HOME/bin/spark-submit ./parent_child.py {input} {output} {file_type} {crawl_path}
+    spark-submit ./parent_child.py {input} {output} {file_type} {crawl_path}
     """
 
     for i, fname in enumerate(os.listdir(TEMP_PATH)):
