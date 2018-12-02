@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import sys
 import os
 import re
@@ -69,7 +68,7 @@ def process_warcs(i_, iterator):
                 print("Failed to read data from local")
                 continue
         else:
-            print("Unknown file system")
+            print("Unknowm file system")
 
         try:
             for record in ArchiveIterator(stream):
@@ -122,8 +121,8 @@ def get_external_links(html_content, parentTLD, parent):
                     unique_map[parentTLD] = {}
                     parents_children = unique_map[parentTLD]
 
-                parent_domain = tldextract.extract(parentTLD).domain
-                child_domain = tldextract.extract(get_domain).domain
+                parent_domain = rec.sub('', parentTLD).strip().split('.')[0]
+                child_domain = rec.sub('', get_domain).strip().split('.')[0]
 
                 if parent_domain != child_domain:
                     if (href.startswith("http") or href.startswith("http")) and href not in parents_children:
@@ -169,15 +168,15 @@ if __name__ == '__main__':
         ("spark.serializer", "org.apache.spark.serializer.KryoSerializer"),
     ))
     rec = re.compile(r"(https?://)?(www\.)?")  # Regex to clean parent/child links
-    sc = SparkContext(appName='etl-common-crawl', conf=conf)
+    sc = SparkContext(appName='etl', conf=conf)
     spark = SQLContext(sparkContext=sc)
 
     parser = argparse.ArgumentParser(description='Perform ETL on CommonCrawl')
-    parser.add_argument('input', type=str,  help='Input path')
+    parser.add_argument('input', type=str, help='Input path')
     parser.add_argument('output', type=str, help='Output path')
     parser.add_argument('file_type', type=str, help='file or s3')
     parser.add_argument('crawl_path', type=str, help='file path or bucket name in case of s3')
-    parser.add_argument('sample_size', type=int, help='number of warcs to crawl')
+    parser.add_argument('sample_size', type=int, help='file path or bucket name in case of s3')
 
     args = parser.parse_args()
 
