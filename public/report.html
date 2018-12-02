@@ -26,47 +26,97 @@
         web pages utilizing nothing but the URL information and the links between them, using 
         web graphs built from the crawl data. Our work is inspired by 
         <a href="https://towardsdatascience.com/large-scale-graph-mining-with-spark-part-2-2c3d9ed15bb5">
-        this introductory Medium blog post</a> on this topic.</a>
+        this introductory Medium blog post</a> on this topic.
+
+        In particular, our project focuses on the following aspects:
+        <ol>
+            <li>URL data extraction and cleaning from Common Crawl database</li>
+            <li>Graph analysis on domain names to see how they are related to one another</li>
+            <li>Visualizing the relationships using graph visualization techniques</li>
+        </ol>
+
+        In addition to the base tasks listed above, we also treated this as a technology 
+        review of different tools that are used for analyzing and visualizing graphs, some of which we list
+        in this report.
+
     <p>
+    
+    <h2>Motivation: Why graphs?</h2>
     <p>
-        Graphs are a fundamental type of data structure that utilize the underlying
-        substructures in the data to capture relationships between its objects. In the 
-        recent years, there have been many interesting applications of graph analysis 
-        on datasets in biology, sociology and computer science. In the field of machine
-        learning, graphs are especially important of unsupervised learning, especially clustering.
-        Recently, the availability of big data tools combined with freely available open datasets
+        In recent years, there have been some <a href="https://arxiv.org/pdf/1111.3919.pdf">
+        interesting applications</a> of graph analysis on datasets in areas as diverse as social networks, biology and computer science. 
+        In the field of machine learning, graphs are especially important for unsupervised learning, especially clustering. As datasets
+        become larger and larger, finding more efficient unsupervised clustering techniques to gain insights 
+        from the data will become more and more important. Recently, the availability of big data tools combined with freely available open datasets
         and relevant example code on GitHub has enabled widespread graph analysis in a host of real-world applications.
     </p>
     <p>
-        A graph is a very simple data structure, represented by <i>vertices</i> and <i>edges</i>, which
+        Graphs are a fundamental type of data structure that utilize the underlying substructures in 
+        the data to capture relationships between its objects. A graph is a very simple data structure, represented by
+        <i>vertices</i> and <i>edges</i>, which
         can be directed or undirected. In our case, since we are analyzing the relationship between
         web URLs by just using the links that they connect to, we will be looking at undirected 
         graphs, where each web page is a <i>vertex</i>, and each <i>href</i>, or outgoing link from one 
         web page to another, is an <i>edge</i>. 
     </p>
+    <p>
+        For our future careers as data scientists/engineers, we felt that graph analysis and visualization was a fruitful topic to finetune our 
+        data handling skills and would give us exposure to new areas of bid data analysis and visualization. 
+    </p>
+
+    <h2>Tools used</h2>
+    <p>
+        In approaching this problem, we brainstormed on a combination of approaches based on our reading numerous
+        of blogs and research papers that tackle the problem of graph analysis. 
+        
+    <ul>
+        <li><a href="spark.apache.org/docs/2.3.1/api/python/pyspark.html">
+            Spark's Python API</a> for URL extraction and cleaning</li> 
+        <li>Amazon Web Services'<a href="https://docs.aws.amazon.com/AmazonS3/latest/dev/Welcome.html"> S3</a> interface
+            to help avoid large network file transfers of data when accessing Common Crawl data</li>
+        <li><a href="https://graphframes.github.io/quick-start.html">GraphFrames</a> in PySpark to 
+            perform the heavy-lifting for graph analysis using example code from <a href="https://github.com/wsuen/pygotham2018_graphmining">
+                this GitHub repo</a></li> 
+        <li><a href="https://d3js.org/">D3.js</a> library for graph visualization</li>
+    </ul>   
+    </p>
 
     <h1>Methodology</h1>
+
+    <h2>Handling Common Crawl Data</h2>
     <p>
-        To analyze the structure of web graphs from the Common Crawl data, we use the following
-        steps:
-        <ol>
-            <li>Extract relevant URLs using the href tags from the relevant HTML content from the 
-                WARC data in Common Crawl's database.</li>
-            <li>Define a graph structure using vertices (each parent domain) and edges (links between two vertices).</li>
-            <li>Run community detection and other kinds of analysis on the graph (described below).</li>
-            <li>Visualize the graph and the linked entities using a graphical technique, such as <i>force-directed graphs.</i></li>
-        </ol>
+        Common crawl web data is stored in three primary file formats: <i>WAT, WET and WARC</i>. These are an efficient
+        storage format for massive web arvhice data, and the full extent of the data structure is explained on the 
+        <a href="http://commoncrawl.org/2014/04/navigating-the-warc-file-format/">source page</a>. Common Crawl generates 
+        extensive crawl data roughly once a month (each a few petabytes in size), and stores all of the information in these 
+        three file formats. The data is then indexed and the index information is made <a href="https://index.commoncrawl.org/">
+        publicly available</a>. 
     </p>
+    <p>The format we are primarily interested in is the WARC source files. Using some starter code from 
+        <a href="https://github.com/commoncrawl/cc-pyspark">this GitHub repo</a>, we wrote some of our own code that parses
+        through a subset of the complete Common Crawl database using a list of download links (specified as S3 buckets) from the 
+        index page mentioned above. Since parsing through the crawl data for the entire month all at once can be quite expensive,
+        we limit the number of WARC files that our code looks through. Given sufficient compute resources and run time, we imagine 
+        that this same code would scale to be able to parse through an entire month's data without significant rework. 
+    </p>
+
     <p>
-        We utilize <a href="https://graphframes.github.io/quick-start.html">GraphFrames</a> in PySpark to 
-        perform the heavy-lifting for graph analysis, since we are dealing with a <i>very</i> large dataset (several hundred GB).   
-        To help avoid large network file transfers, we aim to extend this approach to access the data via Amazon
-        Web Services' <a href="https://docs.aws.amazon.com/AmazonS3/latest/dev/Welcome.html">S3</a> interface.
-        All the data cleaning and URL extraction code is written in Python, and the graph structure visualization is
-        done using the <a href="https://d3js.org/">D3.js</a> library. Once we have an initial proof of concept,
-        we can look at extending this approach to utilize more powerful graph visualization databases such as 
-        <a href="https://neo4j.com/">Neo4j</a>. 
+        Our ETL code extracts the URLs of the parent web page through the HTML source inside the WARC files, and then parses through 
+        the same HTML source for embedded <i>href</i> links that the parent page points to. We refer to these embedded hyperlinks as 
+        "children". To simplify the extraction and show us direct parent-child relationships, we limit the search to only one level 
+        of depth, and store both the parent and child URLs in a PySpark DataFrame. Additional filtering is done to remove duplicates
+        and we limit our domain search to only the topmost level. For example, <i>"www.cnn.com"</i> and <i>"https://www.cnn.com/2018/12/01"</i> are
+        both stored as <i>"cnn.com"</i>, with subdomains removed. 
     </p>
+        
+    <p>
+        Once we extract the relevant parent-child domain information, we export all the data to the <i>parquet</i> format. This step 
+        greatly condenses the information to a few hundred megabytes at most. The parquet data is then read back into PySpark so that 
+        we can perform graph analysis. We use PySpark's GraphFrame module to condense and filter information in the DataFrames to edges 
+        and vertices, following which we can run clustering analyses on them.
+    </p>
+
+
 
     <h2>Label Propagation Analysis</h2>
     <p>
@@ -85,20 +135,63 @@
         has a similar label to its neighbor. In a large enough graph, this difference in label is sufficient to see how closely
         or distantly two vertices should lie, and this tells us something about their relationship.
     </p>
+
+    <h2>PageRank Analysis</h2>
+    <p>
+        Another useful technique to identify the importance of specific domain names relative to the others, is <i>
+            <a href="https://nlp.stanford.edu/IR-book/html/htmledition/pagerank-1.html">PageRank</a></i>. Given a particular graph 
+            structure, running a PageRank analysis computes a score for each vertex of the graph depending on how many other vertices
+            point to it. Looking at the graph this way allows us to pinpoint nodes of "high centrality" very easily. In our case, we
+            look to visualize the vertices (or nodes) of our LPA-computed graph by sizing the nodes proportional to the PageRank Score.
+            This tells us a lot about the graph structure in a visual manner.    
+    </p>
+
+    <h2>Graph Visualization</h2>
+    <p>
+        Once we have the analysis completed, we write our results to CSV files. We then postprocess the analysis data (nodes and edges)
+        using a Python script. The data is formatted and written to a JSON file that can then be read into D3 for visualization. This 
+        particular step of our pipeline is not particularly suited for "huge data", since D3 is not really meant for this purpose. However, 
+        in doing extensive research on graph visualization, we realized that there are not a lot of tools out there that are both easy to 
+        use and are optimized for handling millions of graph nodes, hence we stick to visualizing a small subset of our data using D3.
+    </p>
     
 
-    <h1>Problems</h1>
+    <h1>Problems Faced</h1>
+    <h2>Data Cleaning</h2>
     <p>
-        We faced a number of problems while initially deciding our approach to this problem. Some of these tasks are listed 
-        below.
-        <ol>
-            <li>Filter out "useless" href data from large HTML dumps</li>
-            <li>Avoid domains linking to themselves (this creates many duplicates)</li>
-            <li>Find ways to filter out domains of interest before performing the community clustering</li>
-            <li>Visualize a huge PySpark DataFrame in a way that allows us to understand the graph structure</li>
-        </ol>
-        We stood on the shoulders of the people who have tackled this problem before us, and wrote some of our own code to help 
-        develop a pipeline that we hope can be easily extended based on need. 
+        As one can imagine, parsing through a dataset that is several petabytes in size requires some forethought. We stood on the shoulders
+        of people who have tackled this issue before us, and looked at example code on GitHub. However, for our specific case, we not only 
+        needed to extract and parse out the URL information, but also handle filtering and formatting issues that arose, for which we wrote 
+        some custom cleaning code. Below is a summary of some of the issues we faced in our ETL phase:
+        <ul>
+            <li>Due to the size of the data, we spent significant time studying how to reduce disk space usage when testing and accessing the data through S3</li>
+            <li>For our specific needs, we faced some issues removing duplicate URLS while not losing information on parent-child relationships</li>
+            <li>Not all web pages had English characters, so we had to look up encoding standards to avoid slowdowns in Spark</li>
+            <li>We had issues with deciding how best to filter down the massive list of domains to a few domains that we care about -- for example, how 
+                to subset the data such that we can study relationships between specific domain names.
+            </li>
+        </ul>
+    </p>
+    
+    <h2>Visualization</h2>
+    <p>
+        Visualizing large graphs (with hundreds of thousands or more) nodes is quite a challenge. In most cases, it doesn't make sense to visualize 
+        these many nodes and edges all at once, since a lot of the relationships are obscured in such a large and complex graph. There are quite a few 
+        graph visualization tools out there, and we faced some problems in deciding which to use. In the end, we chose to use D3 because of its ease of 
+        use, great documentation, high aesthetic appeal and web-rendering capabilities. 
+    </p>
+    <p>
+        In addition to the size of the data, the technique we use for graph clustering, called "force-clustering" (described in more detail in the next section)
+        , has been implemented in D3 in way that it scales with <i>O(n log n)</i> per iteration <a href="https://stackoverflow.com/a/7811354/1194761">
+            (see this thread)</a>. This makes rendering anything higher than 50,000 nodes very expensive, and it would take quite a long time to design
+        a system that performs the rendering on the server side rather than the client side. An alternate tool to perform the visualization is to use a tool
+        like <a href="https://gephi.org/">Gephi</a>; however, it does not have web-based rendering capabilities and came with its own learning curve
+        and implementation difficulties. 
+    </p>
+
+    <p>
+        In the end, we came to a compromise with respect to data size, aesthetics and ease of deployment on a web-interface, and chose D3 for our specific 
+        case. 
     </p>
 
     <h1>Results</h1>
@@ -114,19 +207,35 @@
     form central points in the graph, which is easily visible upon prelimilary inspection. 
     <br>
 
-    <p>Label Propagation:</p>
+    <h3>Label Propagation:</h3>
     <div align="center" id="lpa" class="svg-container"></div>
 
-    <p>Page Rank:</p>
+    <h3>Page Rank:</h3>
     <div align="center" id="pagerank" class="svg-container"></div>
 
-    <script>
+    <!-- <script>
         d3.json("community-cluster.json", drawLPAGraph);
         d3.json("community-cluster.json", drawPagerankGraph);
-    </script>
+    </script> -->
 
     <h1>Summary and Further Work</h1>
-    TODO: Write summary once we complete analysis
+    <p>
+        Common Crawl data is a very highly valuable and open data source for various aspects of the internet, and has the potential to yield many useful insights aside
+        from the aspects we looked at in this project. Over the course of our work, we had to learn about various aspects of big data systems, cloud storage, encoding styles
+        and also how to extract relevant and meaningful data from large datasets. We used a lot of example code that is available for similar tasks, but customized it to suit
+        our goals and published our code openly on GitHub. 
+    </p>
+
+    <p>
+        There are a number of areas where our work can be extended and refined. We hope to look into better ways to perform upstream data extraction and filtering in a way
+        that further minimizes the amount of local data stored. Additional ways to identify parent-child relationships in the web URLs, and utilizing metadata information from 
+        the WARC files can be looked at. Additional user-interface features could be added for making the entire pipeline a lot smoother and easier to modify for specific tasks.
+        For example, an alternate data pipeline that utilizes graph databases (like <a href="https://neo4j.com/">Neo4j</a>) could massively speed up the querying capability and
+        allow us to filter down the domain names to our communities of interest more efficiently. With regard to visualization, there are numerous other tools out there that 
+        could possibly handle large graph loads better than our approach, such as <a href="http://www.graphviz.org/">Graphviz</a> and <a href="http://sigmajs.org/">Sigma.js</a>.
+        The graph processing and visualization space is continuously evolving, and we aim to keep a close watch on these tools and techniques for our future careers.
+    </p>
+
 
 </body>
 
