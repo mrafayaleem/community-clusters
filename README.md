@@ -2,9 +2,9 @@
 
 Contains a bootstrap ETL to generate a parquet file of records from a single WARC file of common crawl web data.
 
-To generate the parquet files to ```test/``` from the common crawl data:
+Example command to generate the parquet files to ```test/``` from the common crawl data:
 
-    $ spark-submit parent_child.py input/test_warc.txt <output> <filesystem> <s3bucket/localPath> <sample size>
+    $ spark-submit parent_child.py input/test_warc.txt output s3 commoncrawl 2 
 
 To inspect the parquet file, open up Pyspark shell and run:
 
@@ -39,26 +39,28 @@ only showing top 10 rows
 Once we have the dataframe of all the parent/child links as above, we can proceed 
 to perform graph analysis using PySpark graphframes. 
 
-To run the Spark shell with the GraphFrames package:
+To run analysis on the Spark shell with the GraphFrames package, specify the below optional arguments (using facebook, twitter and google as an example):
+    
+    `$ spark-submit --packages graphframes:graphframes:0.6.0-spark2.3-s_2.11 analysis.py --dir <path_to_parquets> --limiter <max_no_items> --focus twitter google facebook`
 
+To plot community clusters after analysis"
 
-    $ spark-submit --packages graphframes:graphframes:0.6.0-spark2.3-s_2.11 analysis.py
+    `$ python3 plot_communities.py`
 
+To view communities detected on a browser:
 
+    `$ python3 -m http.server 8000`  OR
+    `$ python3 -m SimpleHTTPServer 8000`
+
+Then open:
+`localhost:8000/public/index.html` in the browser
 TODO:
+
 - [Done] Extend `process_warcs` to S3
 - [ ] Add `requirements.txt`
 - [ ] use distinct in parent/child domains for analysis
 - [ ] analyse the popularity of these domains
 - [ ] analysis around the paths of the popular domains
-- [ ] visualize the poplularity  
+- [ ] visualize the popularity  
 
-To run analysis on the Spark shell with the GraphFrames package
-    use `spark-submit --packages graphframes:graphframes:0.6.0-spark2.3-s_2.11 analysis.py`
 
-To plot community clusters after analysis
-    use `python3 plot_communities.py`
-
-To view communities detected on a browser
-    use `python3 -m http.server 8000` or `python -m SimpleHTTPServer 8000`
-    then open `localhost:8000/public/index.html` in the browser
