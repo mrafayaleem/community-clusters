@@ -60,5 +60,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main()
-
-    os.system('$SPARK_HOME/bin/spark-submit parent_child.py')
