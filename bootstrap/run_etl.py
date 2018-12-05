@@ -17,17 +17,20 @@ def main():
         data = fp.readlines()
 
     tout = []
+    count = 0
     for i, line in enumerate(data):
         tout.append(line)
 
         if (i + 1) % threshold == 0:
-            with open(TEMP_PATH + '/t{0}'.format(i), 'w') as file_handler:
+            count += 1
+            with open(TEMP_PATH + '/t{0}'.format(count), 'w') as file_handler:
                 for item in tout:
                     file_handler.write("{}\n".format(item))
             tout = []
 
         elif i == len(data) - 1:
-            with open(TEMP_PATH + '/t{0}'.format(i), 'w') as file_handler:
+            count += 1
+            with open(TEMP_PATH + '/t{0}'.format(count), 'w') as file_handler:
                 for item in tout:
                     file_handler.write("{}\n".format(item))
             tout = []
@@ -37,7 +40,7 @@ def main():
     """
 
     for i, fname in enumerate(os.listdir(TEMP_PATH)):
-        input = TEMP_PATH + '/t{0}'.format(i)
+        input = TEMP_PATH + '/t{0}'.format(i+1)
         os.system(command.format(
             input=input,
             output=args.output + str(i),
