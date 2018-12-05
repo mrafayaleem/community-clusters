@@ -25,14 +25,14 @@ def main():
             count += 1
             with open(TEMP_PATH + '/t{0}'.format(count), 'w') as file_handler:
                 for item in tout:
-                    file_handler.write("{}\n".format(item))
+                    file_handler.write("{}".format(item))
             tout = []
 
         elif i == len(data) - 1:
             count += 1
             with open(TEMP_PATH + '/t{0}'.format(count), 'w') as file_handler:
                 for item in tout:
-                    file_handler.write("{}\n".format(item))
+                    file_handler.write("{}".format(item))
             tout = []
 
     command = """
