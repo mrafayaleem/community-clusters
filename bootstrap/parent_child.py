@@ -34,53 +34,56 @@ def url_to_domain(url):
 
 
 def process_warcs(i_, iterator):
-    # Currently, this function is processing from files in parallel across partitions.
-    # We can extend this same function easily for S3
+    try:
+        # Currently, this function is processing from files in parallel across partitions.
+        # We can extend this same function easily for S3
 
-    s3pattern = re.compile('^s3://([^/]+)/(.+)')
-    base_dir = os.path.abspath(os.path.dirname(__file__))
+        s3pattern = re.compile('^s3://([^/]+)/(.+)')
+        base_dir = os.path.abspath(os.path.dirname(__file__))
 
-    no_sign_request = botocore.client.Config(
-        signature_version=botocore.UNSIGNED)
-    s3client = boto3.client('s3', config=no_sign_request)
+        no_sign_request = botocore.client.Config(
+            signature_version=botocore.UNSIGNED)
+        s3client = boto3.client('s3', config=no_sign_request)
 
-    for uri in iterator:
-        if uri.startswith('s3://'):
-            s3match = s3pattern.match(uri)
-            bucketname = s3match.group(1)
-            path = s3match.group(2)
-            warctemp = TemporaryFile(mode='w+b')
+        for uri in iterator:
+            if uri.startswith('s3://'):
+                s3match = s3pattern.match(uri)
+                bucketname = s3match.group(1)
+                path = s3match.group(2)
+                warctemp = TemporaryFile(mode='w+b')
             
-            try:
-                s3client.download_fileobj(bucketname, path, warctemp)
-            except botocore.client.ClientError as exception:
-                print('Failed to download from s3')
-                warctemp.close()
-                continue
-            warctemp.seek(0)
-            stream = warctemp
+                try:
+                    s3client.download_fileobj(bucketname, path, warctemp)
+                except botocore.client.ClientError as exception:
+                    print('Failed to download from s3')
+                    warctemp.close()
+                    continue
+                warctemp.seek(0)
+                stream = warctemp
 
-        elif uri.startswith('file:'):
-            uri = uri[5:]
-            uri = os.path.join(base_dir, uri)
-            try:
-                stream = open(uri, 'rb')
-            except IOError as exception:
-                print("Failed to read data from local")
-                continue
-        else:
-            print("Unknown file system")
+            elif uri.startswith('file:'):
+                uri = uri[5:]
+                uri = os.path.join(base_dir, uri)
+                try:
+                    stream = open(uri, 'rb')
+                except IOError as exception:
+                    print("Failed to read data from local")
+                    continue
+            else:
+                print("Unknown file system")
 
-        try:
-            for record in ArchiveIterator(stream):
-                processed = process_record(record)
-                if processed:
-                    yield processed
-                continue
-        except ArchiveLoadFailed as exception:
-            print('Invalid WARC')
-        finally:
-            stream.close()
+            try:
+                for record in ArchiveIterator(stream):
+                    processed = process_record(record)
+                    if processed:
+                        yield processed
+                    continue
+            except ArchiveLoadFailed as exception:
+                print('Invalid WARC')
+            finally:
+                stream.close()
+    except: 
+        print("URL invalid")
 
 
 def process_record(record):
