@@ -41,7 +41,7 @@ to perform graph analysis using PySpark graphframes.
 
 To run analysis on the Spark shell with the GraphFrames package, specify the below optional arguments (using facebook, twitter and google, and max of 10,000 items as as an example):
     
-    `$ spark-submit --packages graphframes:graphframes:0.6.0-spark2.3-s_2.11 analysis.py --dir bootstrap/spark-warehouse/output --limiter 10000 --focus twitter google facebook`
+    `$ spark-submit --packages graphframes:graphframes:0.6.0-spark2.3-s_2.11 analysis.py --dir bootstrap/spark-warehouse/6warcs --focus twitter google facebook`
 
 To plot community clusters after analysis"
 
@@ -61,6 +61,4 @@ TODO:
 - [ ] use distinct in parent/child domains for analysis
 - [ ] analyse the popularity of these domains
 - [ ] analysis around the paths of the popular domains
-- [ ] visualize the popularity  
-
-
+- [ ] visualize the popularity 

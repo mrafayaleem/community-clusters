@@ -1,5 +1,5 @@
 var width = 960;
-var height = 700;
+var height = 600;
 var margin = 20;
 var padding = margin / 2;
 var color = d3.scale.category20();
@@ -31,6 +31,7 @@ function addTooltip(circle, analysisType) {
         tooltip.attr("dx", 0);
     }
 }
+
 var vis = d3.select("#chart")
     .append("svg:svg")
     .attr("width", width)
@@ -39,12 +40,13 @@ var vis = d3.select("#chart")
     .append('svg:g')
     .call(d3.behavior.zoom().on("zoom", redraw))
     .append('svg:g');
+
 vis.append('svg:rect')
     .attr('width', width)
     .attr('height', height)
     .attr('fill', 'white');
+
 function redraw() {
-    console.log("here", d3.event.translate, d3.event.scale);
     vis.attr("transform",
         "translate(" + d3.event.translate + ")"
         + " scale(" + d3.event.scale + ")");
@@ -62,7 +64,7 @@ function tick(e) {
 }
 // Draws nodes on plot
 function drawNodes(nodes, analysisType) {
-    // used to assign nodes color by group
+    // used to assign nodes color by community
     var color = d3.scale.category20();
     d3.select("#plot"+analysisType).selectAll(".node")
         .data(nodes)
@@ -80,7 +82,7 @@ function drawNodes(nodes, analysisType) {
         .on("mouseout", function (d, i) { d3.select("#tooltip").remove(); });
 }
 // Draws edges between nodes
-function drawLinks(links, analysisType) {
+function drawEdges(links, analysisType) {
     var scale = d3.scale.linear()
         .domain(d3.extent(links, function (d, i) {
             return d.value;
@@ -112,23 +114,23 @@ function drawGraph(graph, analysisType) {
     svg.append("rect")
         .attr("width", width)
         .attr("height", height)
-        .style("fill", "#eeeeee");
+        .style("fill", "#f6f6f6");
     // create an area within svg for plotting graph
     var plot = svg.append("g")
         .attr("id", "plot"+analysisType)
         .attr("transform", "translate(" + padding + ", " + padding + ")");
     var layout = d3.layout.force()
         .size([width - margin, height - margin])
-        .charge(-20)
+        .charge(-10)
         .linkDistance(function (d, i) {
-            return (d.source.community == d.target.community) ? 10 : 20;
+            return (d.source.community == d.target.community) ? 30 : 60;
         })
         .nodes(graph.nodes)
         .links(graph.links)
         .start();
-    drawLinks(graph.links, analysisType);
+    drawEdges(graph.links, analysisType);
     drawNodes(graph.nodes, analysisType);
-    // add ability to drag and update layout
+    // drag and update layout
     d3.selectAll(".node").call(layout.drag);
     layout.on("tick", function () {
         d3.selectAll(".link")
@@ -154,10 +156,82 @@ function drawGraph(graph, analysisType) {
     });
 }
 
-function drawLPAGraph(graph) {
-    drawGraph(graph, "lpa")
+function drawMayLPAGraph(graph) {
+    drawGraph(graph, "lpa-may")
 }
 
-function drawPagerankGraph(graph) {
-    drawGraph(graph, "pagerank")
+function drawOctLPAGraph(graph) {
+    drawGraph(graph, "lpa-oct")
 }
+
+function drawPagerankGraph(data) {
+    var radius = Math.min(width, height) / 2 - 50;
+    var color = d3.scale.ordinal()
+        .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#e5aab6", "#a05d56", "#d0743c", "#ff8c00", "#dfac84", "#b36200"]);
+    var arc = d3.svg.arc()
+        .outerRadius(radius - 10)
+        .innerRadius(radius - 70);
+    var pie = d3.layout.pie()
+        .sort(null)
+        .value(function (d) {
+            return d.pagerank;
+        });
+    var svg = d3.select("#pagerank").append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .append("g")
+        .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+    var g = svg.selectAll(".arc")
+        .data(pie(data))
+        .enter().append("g")
+        .attr("class", "arc");
+    g.append("path")
+        .attr("d", arc)
+        .style("fill", function (d) {
+            return color(d.data.name);
+        });
+    g.append("text")
+        .attr("transform", function (d) {
+            return "translate(" + arc.centroid(d) + ")";
+        })
+        .attr("dy", ".35em")
+        .text(function (d) {
+            return Math.round(d.data.pagerank, 2);
+        });
+
+    svg.append("text")
+        .attr("dy", ".35em")
+        .style("text-anchor", "middle")
+        .text(function (d) {
+            return "Top 10 websites";
+        });
+
+    var legend = d3.select("#pagerank").append("svg")
+        .attr("class", "legend")
+        .attr("width", radius * 2)
+        .attr("height", radius * 2)
+        .selectAll("g")
+        .data(color.domain().slice().reverse())
+        .enter().append("g")
+        .attr("transform", function (d, i) {
+            return "translate(0," + i * 20 + ")";
+        });
+
+    legend.append("rect")
+        .attr("width", 18)
+        .attr("height", 18)
+        .style("fill", color);
+
+    legend.append("text")
+        .attr("x", 24)
+        .attr("y", 9)
+        .attr("dy", ".35em")
+        .text(function (d) {
+            return d;
+        });
+}
+
+
+
+
