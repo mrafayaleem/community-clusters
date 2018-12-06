@@ -11,14 +11,11 @@ perform_analysis()
 }
 
 run_etl(){
-#    echo "$1" "$2" "$3" "$4" "$5"
     cd bootstrap
     rm -r temp/
     python run_etl.py "$1" "$2" "$3" "$4" "$5"
     cd ..
 }
-
-#python run_etl.py input_paths/may.warc.paths rufi s3 /Users/rafay/datalab/community-clusters/bootstrap 10
 
 
 if [ "$1" == "etl" ]; then
