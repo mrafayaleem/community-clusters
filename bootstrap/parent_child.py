@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import sys
 import os
 import re
 import argparse
@@ -16,7 +15,6 @@ from urllib.parse import urlparse
 import tldextract
 import boto3
 import botocore
-from io import BytesIO
 from tempfile import TemporaryFile
 
 
@@ -35,8 +33,6 @@ def url_to_domain(url):
 
 def process_warcs(i_, iterator):
     try:
-        # Currently, this function is processing from files in parallel across partitions.
-        # We can extend this same function easily for S3
 
         s3pattern = re.compile('^s3://([^/]+)/(.+)')
         base_dir = os.path.abspath(os.path.dirname(__file__))
@@ -55,7 +51,7 @@ def process_warcs(i_, iterator):
                 try:
                     s3client.download_fileobj(bucketname, path, warctemp)
                 except botocore.client.ClientError as exception:
-                    print('Failed to download from s3')
+                    print('Failed to download from s3', exception)
                     warctemp.close()
                     continue
                 warctemp.seek(0)
@@ -67,7 +63,7 @@ def process_warcs(i_, iterator):
                 try:
                     stream = open(uri, 'rb')
                 except IOError as exception:
-                    print("Failed to read data from local")
+                    print("Failed to read data from local", exception)
                     continue
             else:
                 print("Unknown file system")
@@ -130,7 +126,6 @@ def get_external_links(html_content, parentTLD, parent):
 
                 if parent_domain != child_domain:
                     if (href.startswith("http") or href.startswith("http")) and href not in parents_children:
-                    # if get_domain not in link_list and href.startswith("http"):
                         childTLD = rec.sub('', get_domain).strip()
                         child = href
                         link_list.append((parent, parentTLD, childTLD, child))
@@ -141,8 +136,6 @@ def get_external_links(html_content, parentTLD, parent):
 
 def main(input_file, output_file, file_system, to_crawl_data):
     input_data = sc.textFile(input_file)
-    #print('INDATA', input_data.collect())
-    #input_data = sc.parallelize(warcPaths.takeSample(False, sample))
 
     if(file_system=="s3"):
         input_data = input_data.map(lambda p: "s3://" + to_crawl_data + "/" + p)
@@ -162,8 +155,6 @@ def main(input_file, output_file, file_system, to_crawl_data):
 
     df.write.format("parquet").saveAsTable(output_file)
 
-    #print('OUTDATA', mapped.take(5))
-
 
 if __name__ == '__main__':
     conf = SparkConf().setAll((
@@ -180,7 +171,6 @@ if __name__ == '__main__':
     parser.add_argument('output', type=str, help='Output path')
     parser.add_argument('file_type', type=str, help='file or s3')
     parser.add_argument('crawl_path', type=str, help='file path or bucket name in case of s3')
-    #parser.add_argument('sample_size', type=int, help='number of warcs to crawl')
 
     args = parser.parse_args()
 
