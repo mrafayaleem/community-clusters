@@ -20,7 +20,7 @@ sqlContext = SQLContext(sc)
 
 def read_parqet(inputs, focus):
     # Read in parquet files
-    data = sqlContext.read.parquet(inputs)
+    data = sqlContext.read.parquet(inputs+"/*/")
     # Select focus domains
     if focus:
         data = data.filter(data.childDomain.isin(focus))
