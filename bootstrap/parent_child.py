@@ -75,7 +75,7 @@ def process_warcs(i_, iterator):
                         yield processed
                     continue
             except ArchiveLoadFailed as exception:
-                print('Invalid WARC')
+                print('Invalid WARC', exception)
             finally:
                 stream.close()
     except: 
@@ -137,9 +137,9 @@ def get_external_links(html_content, parentTLD, parent):
 def main(input_file, output_file, file_system, to_crawl_data):
     input_data = sc.textFile(input_file)
 
-    if(file_system=="s3"):
+    if file_system == "s3":
         input_data = input_data.map(lambda p: "s3://" + to_crawl_data + "/" + p)
-    elif(file_system=="file"):
+    elif file_system == "file":
         input_data = input_data.map(lambda p: "file:" + to_crawl_data + "/" + p)
     else:
         print("file system not found.")
