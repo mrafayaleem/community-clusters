@@ -83,6 +83,27 @@
 
     <h1>Methodology</h1>
 
+    <h2>ETL Process</h2>
+    <p>
+        Since Common Crawl dataset is extremely large, it is unfeasible to store it locally for processing and extracting information.
+        To avoid this, we have used AWS S3 Boto client to stream data directly from Common Crawl buckets. This kind of streaming allows
+        us to process data in chunks without causing CPU or memory to be a bottleneck. We feed this stream to a WARC parser which processes
+        each record that is a HTTP response type and further extracts parent and child hrefs. In this process we also make sure that any child
+        links lying under the parent domain are removed to avoid any skewness in our analysis.
+    </p>
+    <p>
+        For the ETL process, we have leveraged mapPartitionsWithIndex instead of map. The reason for this is to optimize S3 downloads
+        over partitions rather than performing it for every function call of the map operation. mapPartitionsWithIndex and mapPartitions
+        allow us to limit this download operation per partition and hence avoid network congestion.
+    </p>
+    <p>
+        The number of WARC files for a single month of crawl is usually around 72,000 with each file containing several segment paths.
+        To make our ETL process more flexible, we have added batching on top of our Spark job. For instance, if there are 100 segment
+        paths in a single WARC file and we want to use a batch size of 10, Spark will process data for 10 files first, store the
+        results in parquet format and continue on the next set of 10 segment paths. This allows us to checkpoint our work such that
+        if any of these jobs fail, we do not lose the entire amount of data that has been processed and can continue from the point-of-failure.
+    </p>
+
     <h2>Handling Common Crawl Data</h2>
     <p>
         Common crawl web data is stored in three primary file formats: <i>WAT, WET and WARC</i>. These are an efficient
