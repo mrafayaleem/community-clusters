@@ -3,47 +3,29 @@
 Create JSON file of links and nodes that will be used to plot the graph in D3
 """
 import json
-from collections import defaultdict
+import argparse
 
 links = []
 nodes = []
-months = ['may', 'oct']
 
-def org_source_targets(month):
+def org_source_targets(path, outputs):
     # Returns a list of dicts containing the source and target ids
 
-    with open("./links-"+month+'/links-'+month+'.csv', "r") as lines:
+    with open("./"+path+"/links-"+outputs+'/links-'+outputs+'.csv', "r") as lines:
         for line in lines:
             line = line.rstrip('\n').split(',')
             links.append({'source': line[0], 'target': line[1]})
     return links
 
-def org_communities(month):   
+def org_communities(path, outputs): 
     """
     Return a list of dicts with keys: 'id', 'domain' and 'community'
     """
-    with open("./communities-"+month+'/communities-'+month+'.csv', "r") as lines:
+    with open("./"+path+"/communities-"+outputs+'/communities-'+outputs+'.csv', "r") as lines:
         for line in lines:
             line = line.rstrip('\n').split(',')
             nodes.append({'id': line[0], 'domain': line[1], 'community': line[2]})
     return nodes
-
-def load_popular_labels(month):   
-    """
-    Return a dict of domains as values with labels as keys: 'domain' and 'community labels'
-    """
-    popular_dict = {}
-    with open("./top10-"+month+'/top10-'+month+'.csv', "r") as lines:
-        for line in lines:
-            line = line.rstrip('\n').split(',')
-            if line[2] in popular_dict:
-                popular_dict[line[2]].append(line[1])
-            else:
-                popular_dict[line[2]] = [line[1]]
-
-    json_dump = json.dumps(popular_dict, indent=1, sort_keys=True)
-    json_out = open('./public/top10-'+month+'.json', 'w')
-    json_out.write(json_dump)
 
 def json_loader(links, nodes):
     # Organize the 
@@ -57,18 +39,19 @@ def json_loader(links, nodes):
     json_content = {"nodes":nodes, "links":links}
     return json_content
 
-def main(output_path):
-
-    for m in months:
-        # Write out JSON file for D3
-        links = org_source_targets(m)
-        nodes = org_communities(m)
-        popular_labels = load_popular_labels(m)
-        json_content = json_loader(links, nodes)
-        json_dump = json.dumps(json_content, indent=1, sort_keys=True)
-        json_out = open(output_path+'-'+m+'.json', 'w')
-        json_out.write(json_dump)
+def main(output_path, path, outputs):
+    # Write out JSON file for D3
+    links = org_source_targets(path, outputs)
+    nodes = org_communities(path, outputs)
+    json_content = json_loader(links, nodes)
+    json_dump = json.dumps(json_content, indent=1, sort_keys=True)
+    json_out = open(output_path+'-'+path+'-'+outputs+'.json', 'w')
+    json_out.write(json_dump)
 
 if __name__ == "__main__":
-    output_path = './public/community-cluster'
-    main(output_path)
+    parser = argparse.ArgumentParser(description='Plot files for labelled communities')
+    parser.add_argument('-o', '--outputs', type=str, nargs='?', help='Output name for files generated')
+    parser.add_argument('-p', '--path', type=str, nargs='?', help='Output directory path name for focus domains')
+    args = parser.parse_args()
+    output_path = './public/files/community-cluster'
+    main(output_path, args.path, args.outputs)
