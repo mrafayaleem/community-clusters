@@ -98,7 +98,8 @@ def process_record(record):
 
 def get_external_links(html_content, parentTLD, parent):
     """
-    Extract links from the HTML
+    Extract links from the HTML. Parses HTML from the parent, find all links not in parent domain
+    and return the result
     """
     link_list = []
     unique_map = {}
@@ -144,12 +145,14 @@ def main(input_file, output_file, file_system, to_crawl_data):
     else:
         print("file system not found.")
 
+    # Use map partitions so that S3 download happens per partition rather than per map function call.
+    # See this for more details: https://stackoverflow.com/a/39203798/569085
     partition_mapped = input_data.mapPartitionsWithIndex(process_warcs)
     mapped = partition_mapped.flatMap(lambda x: x)
 
     df = spark.createDataFrame(mapped, schema=schema).distinct()
 
-    # Extract child and parent domains so we can easily use asin filtering
+    # Extract child and parent domains so we can easily use asin filtering after loading the parquet file
     df = df.select(
         '*', url_to_domain('childTLD').alias('childDomain'), url_to_domain('parentTLD').alias('parentDomain'))
 
@@ -162,6 +165,7 @@ if __name__ == '__main__':
         ("spark.locality.wait", "20s"),
         ("spark.serializer", "org.apache.spark.serializer.KryoSerializer"),
     ))
+
     rec = re.compile(r"(https?://)?(www\.)?")  # Regex to clean parent/child links
     sc = SparkContext(appName='etl-common-crawl', conf=conf)
     spark = SQLContext(sparkContext=sc)

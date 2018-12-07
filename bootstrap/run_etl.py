@@ -18,6 +18,9 @@ def main():
 
     tout = []
     count = 0
+
+    # Create N temp files based on the threshold. For a 100 rows and a
+    # threshold of 10, this creates 10 files each with 10 rows
     for i, line in enumerate(data):
         tout.append(line)
 
@@ -39,6 +42,8 @@ def main():
     $SPARK_HOME/bin/spark-submit ./parent_child.py {input} {output} {file_type} {crawl_path}
     """
 
+    # For every file generated, execute the parent_child spark job. Currently, this will put
+    # the output for every file in temp to its own directory. For instance, may result will be may0, may1,..,mayN
     for i, fname in enumerate(os.listdir(TEMP_PATH)):
         input = TEMP_PATH + '/t{0}'.format(i+1)
         os.system(command.format(
