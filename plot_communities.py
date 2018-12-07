@@ -11,7 +11,7 @@ nodes = []
 def org_source_targets(path, outputs):
     # Returns a list of dicts containing the source and target ids
 
-    with open("./"+path+"/links-"+outputs+'/links-'+outputs+'.csv', "r") as lines:
+    with open("data/D3Input/"+path+"/links-"+outputs +".csv", "r") as lines:
         for line in lines:
             line = line.rstrip('\n').split(',')
             links.append({'source': line[0], 'target': line[1]})
@@ -21,7 +21,7 @@ def org_communities(path, outputs):
     """
     Return a list of dicts with keys: 'id', 'domain' and 'community'
     """
-    with open("./"+path+"/communities-"+outputs+'/communities-'+outputs+'.csv', "r") as lines:
+    with open("data/D3Input/"+path+"/communities-"+outputs+".csv", "r") as lines:
         for line in lines:
             line = line.rstrip('\n').split(',')
             nodes.append({'id': line[0], 'domain': line[1], 'community': line[2]})
