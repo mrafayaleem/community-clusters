@@ -11,7 +11,7 @@ if [ "$1" == "execute" ]; then
 
     # Make month directory and move all monthly outputs to this directory
     mkdir -p spark-warehouse/"$3"
-    echo $(mv spark-warehouse/$3*? spark-warehouse/$3)
+    echo $(mv data/$3*? data/$3)
 else
     echo "Unrecognized command"
 fi
