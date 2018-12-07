@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import sys
 import os
 import re
 import argparse
@@ -16,7 +15,6 @@ from urllib.parse import urlparse
 import tldextract
 import boto3
 import botocore
-from io import BytesIO
 from tempfile import TemporaryFile
 
 
@@ -35,8 +33,6 @@ def url_to_domain(url):
 
 def process_warcs(i_, iterator):
     try:
-        # Currently, this function is processing from files in parallel across partitions.
-        # We can extend this same function easily for S3
 
         s3pattern = re.compile('^s3://([^/]+)/(.+)')
         base_dir = os.path.abspath(os.path.dirname(__file__))
@@ -55,7 +51,7 @@ def process_warcs(i_, iterator):
                 try:
                     s3client.download_fileobj(bucketname, path, warctemp)
                 except botocore.client.ClientError as exception:
-                    print('Failed to download from s3')
+                    print('Failed to download from s3', exception)
                     warctemp.close()
                     continue
                 warctemp.seek(0)
@@ -67,7 +63,7 @@ def process_warcs(i_, iterator):
                 try:
                     stream = open(uri, 'rb')
                 except IOError as exception:
-                    print("Failed to read data from local")
+                    print("Failed to read data from local", exception)
                     continue
             else:
                 print("Unknown file system")
@@ -79,7 +75,7 @@ def process_warcs(i_, iterator):
                         yield processed
                     continue
             except ArchiveLoadFailed as exception:
-                print('Invalid WARC')
+                print('Invalid WARC', exception)
             finally:
                 stream.close()
     except: 
@@ -102,7 +98,8 @@ def process_record(record):
 
 def get_external_links(html_content, parentTLD, parent):
     """
-    Extract links from the HTML
+    Extract links from the HTML. Parses HTML from the parent, find all links not in parent domain
+    and return the result
     """
     link_list = []
     unique_map = {}
@@ -130,7 +127,6 @@ def get_external_links(html_content, parentTLD, parent):
 
                 if parent_domain != child_domain:
                     if (href.startswith("http") or href.startswith("http")) and href not in parents_children:
-                    # if get_domain not in link_list and href.startswith("http"):
                         childTLD = rec.sub('', get_domain).strip()
                         child = href
                         link_list.append((parent, parentTLD, childTLD, child))
@@ -141,28 +137,26 @@ def get_external_links(html_content, parentTLD, parent):
 
 def main(input_file, output_file, file_system, to_crawl_data):
     input_data = sc.textFile(input_file)
-    #print('INDATA', input_data.collect())
-    #input_data = sc.parallelize(warcPaths.takeSample(False, sample))
 
-    if(file_system=="s3"):
+    if file_system == "s3":
         input_data = input_data.map(lambda p: "s3://" + to_crawl_data + "/" + p)
-    elif(file_system=="file"):
+    elif file_system == "file":
         input_data = input_data.map(lambda p: "file:" + to_crawl_data + "/" + p)
     else:
         print("file system not found.")
 
+    # Use map partitions so that S3 download happens per partition rather than per map function call.
+    # See this for more details: https://stackoverflow.com/a/39203798/569085
     partition_mapped = input_data.mapPartitionsWithIndex(process_warcs)
     mapped = partition_mapped.flatMap(lambda x: x)
 
     df = spark.createDataFrame(mapped, schema=schema).distinct()
 
-    # Extract child and parent domains so we can easily use asin filtering
+    # Extract child and parent domains so we can easily use asin filtering after loading the parquet file
     df = df.select(
         '*', url_to_domain('childTLD').alias('childDomain'), url_to_domain('parentTLD').alias('parentDomain'))
 
     df.write.format("parquet").saveAsTable(output_file)
-
-    #print('OUTDATA', mapped.take(5))
 
 
 if __name__ == '__main__':
@@ -171,6 +165,7 @@ if __name__ == '__main__':
         ("spark.locality.wait", "20s"),
         ("spark.serializer", "org.apache.spark.serializer.KryoSerializer"),
     ))
+
     rec = re.compile(r"(https?://)?(www\.)?")  # Regex to clean parent/child links
     sc = SparkContext(appName='etl-common-crawl', conf=conf)
     spark = SQLContext(sparkContext=sc)
@@ -180,7 +175,6 @@ if __name__ == '__main__':
     parser.add_argument('output', type=str, help='Output path')
     parser.add_argument('file_type', type=str, help='file or s3')
     parser.add_argument('crawl_path', type=str, help='file path or bucket name in case of s3')
-    #parser.add_argument('sample_size', type=int, help='number of warcs to crawl')
 
     args = parser.parse_args()
 
