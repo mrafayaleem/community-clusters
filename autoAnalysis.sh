@@ -11,7 +11,9 @@ for file in data/ETLout/*; do
 	IFS='/ ' read -r -a array <<< $file
  	month=${array[2]}
 	echo $month
-	echo `spark-submit --packages graphframes:graphframes:0.6.0-spark2.3-s_2.11 analysis.py --inputs $file --outputs $month --path data/AnalysisOut/$1 --focus $2`
+	${SPARK_HOME}/bin/spark-submit --packages graphframes:graphframes:0.6.0-spark2.3-s_2.11 analysis.py --inputs $file --outputs $month --path data/AnalysisOut/$1 --focus $2
+	#echo `spark-submit --packages graphframes:graphframes:0.6.0-spark2.3-s_2.11 analysis.py --inputs $file --outputs $month --path data/AnalysisOut/$1 --focus $2`
+	wait $!
 done
 
 echo "Concatenating for D3"
