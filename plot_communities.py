@@ -53,5 +53,5 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--outputs', type=str, nargs='?', help='Output name for files generated')
     parser.add_argument('-p', '--path', type=str, nargs='?', help='Output directory path name for focus domains')
     args = parser.parse_args()
-    output_path = './public/files/community-cluster'
+    output_path = 'data/htmlInput/community-cluster'
     main(output_path, args.path, args.outputs)
