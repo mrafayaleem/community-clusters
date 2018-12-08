@@ -2,64 +2,41 @@
 
 Contains a bootstrap ETL to generate a parquet file of records from a single WARC file of common crawl web data.
 
-Example command to generate the parquet files to ```test/``` from the common crawl data:
+## Install modules
+All code in this repository uses Python 3.6+ and PySpark 2.3+.  First, install dependencies:
+  
+    pip3 install -r requirements.txt
 
-    $ spark-submit parent_child.py input/test_warc.txt output s3 commoncrawl 2 
+## Directory information
 
-To inspect the parquet file, open up Pyspark shell and run:
+-  ```bootstrap```: Contains ETL code and the condensed parquet files with URL information
+-  ```data```: Contains results of graph analysis
+-  ```public```: Contains D3 visualizations of web graph clusters
 
-```
-$ pyspark
->>> df = sqlContext.read.parquet("spark-warehouse/test")
-```
+## ETL, Analysis and Visualization:
+Use commands in [RUNNING.md](https://github.com/mrafayaleem/community-clusters/blob/master/RUNNING.md) to perform analysis and generate results that are visualized in D3. 
 
-Sample:
-```
-In [3]: df.count()
-Out[3]: 5673
+Example dataframe created by reading parquet files:
 
-In [4]: df.show(10)
-+--------------------+--------------+-------------------+--------------------+
-|              parent|     parentTLD|           childTLD|               child|
-+--------------------+--------------+-------------------+--------------------+
-|http://100balov.info| 100balov.info|       facebook.com|https://www.faceb...|
-|http://100balov.info| 100balov.info|             vk.com|http://vk.com/sto...|
-|http://100balov.info| 100balov.info|        twitter.com|https://twitter.c...|
-|http://100balov.info| 100balov.info|              ok.ru|http://ok.ru/prof...|
-|http://100balov.info| 100balov.info|     svitppt.com.ua|http://svitppt.co...|
-|http://100balov.info| 100balov.info|forum.100balov.info|http://forum.100b...|
-|http://100balov.info| 100balov.info|       arnit.com.ua|http://arnit.com.ua/|
-|http://11210.peta...|11210.peta2.jp|       bbs.peta2.jp|http://bbs.peta2.jp/|
-|     http://1337x.to|      1337x.to|      chat.1337x.to|https://chat.1337...|
-|     http://1337x.to|      1337x.to|       bitsnoop.com|https://bitsnoop.com|
-+--------------------+--------------+-------------------+--------------------+
-only showing top 10 rows
+    >>> sqlContext = SQLContext(sc)
+    >>> df = sqlContext.read.parquet("./bootstrap/spark-warehouse/<your-directory>*")
 
-```
-Once we have the dataframe of all the parent/child links as above, we can proceed 
-to perform graph analysis using PySpark graphframes. 
+    +--------------------+--------------------+-----------+--------------------+-----------+------------+
+    |              parent|           parentTLD|   childTLD|               child|childDomain|parentDomain|
+    +--------------------+--------------------+-----------+--------------------+-----------+------------+
+    |http://1separable...|1separable-43v3r....|twitter.com|http://twitter.co...|    twitter|     skyrock|
+    |      http://3msk.ru|             3msk.ru|    k--k.ru|http://k--k.ru/85...|       k--k|        3msk|
+    |      http://3msk.ru|             3msk.ru|    com9.ru|http://com9.ru/85...|       com9|        3msk|
+    |      http://3msk.ru|             3msk.ru|    com9.ru|http://com9.ru/85...|       com9|        3msk|
+    |      http://3msk.ru|             3msk.ru| top.vy3.ru|http://top.vy3.ru...|        vy3|        3msk|
+    +--------------------+--------------------+-----------+--------------------+-----------+------------+
+    only showing top 5 rows
 
-To run analysis on the Spark shell with the GraphFrames package, specify the below optional arguments (using facebook, twitter and google, and max of 10,000 items as as an example):
+## Interactive Analysis:
+To develop a workflow and make intuitive visualizations, use the Jupyter notebook ```graph_mining.ipynb``` to interactively query the data in PySpark. Requires the PySpark 
+environment to be configured on the system:
+
+    export SPARK_HOME=/home/<user>/spark-2.3.1-bin-hadoop2.7/
+    export PYSPARK_PYTHON=python3
     
-    `$ spark-submit --packages graphframes:graphframes:0.6.0-spark2.3-s_2.11 analysis.py
-        --inputs './bootstrap/spark-warehouse/may/may*' --outputs may --path news --focus cnn foxnews huffingtonpost washingtonpost nytimes usatoday`
-
-To plot community clusters after analysis"
-
-    `$ python3 plot_communities.py --outputs may --path news `
-
-To view communities detected on a browser:
-
-    `$ python3 -m http.server 8000`  OR
-    `$ python3 -m SimpleHTTPServer 8000`
-
-Then open:
-`localhost:8000/public/index.html` in the browser
-TODO:
-
-- [x] Extend `process_warcs` to S3
-- [x] Add `requirements.txt`
-- [x] use distinct in parent/child domains for analysis
-- [x] analyse the popularity of these domains
-- [x] analysis around the paths of the popular domains
-- [x] visualize the popularity 
+Open and run the ```graph_mining.ipynb``` notebook in a shell that used the above commands, so that the shell knows wher eto find PySpark on your system. 
