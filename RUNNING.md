@@ -27,7 +27,7 @@ cd  bootstrap
 ## To run ETL from the file:
 ```bash
 cd  bootstrap
-./etl.sh execute input_paths/may.warc.paths may file /Users/rafay/datalab/community-clusters/bootstrap 1
+./etl.sh execute input_paths/may.warc.paths may file <path_to_root>/community-clusters/bootstrap 1
 ```
 
 # Analysis and Visualiztion:
