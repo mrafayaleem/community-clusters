@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Community Clustering</title>
+
+    <!-- JavaScript Libraries //-->
+    <script type="text/javascript" src="js/d3/d3.js"></script>
+    <script type="text/javascript" src="js/draw_graphs.js"></script>
+    <!-- CSS Style //-->
+    <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,900|Source+Code+Pro:300">
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+
+<body>
+    <div align="center" id="lpa" class="svg-container"></div>
+    <div align="center" id="pagerank" class="svg-container"></div>
+
+    <script>
+        d3.json("../data/htmlInput/community-cluster-university-may.json", drawLPAGraph);
+        d3.csv("../data/htmlInput/rankings-university-may.csv", drawPagerankGraph);
+    </script>
+</body>
+
+</html>
