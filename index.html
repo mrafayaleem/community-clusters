@@ -13,9 +13,9 @@
 </head>
 
 <body>
-    <div style="text-align:center;font-weight:600;">
+    <div style="text-align:center;font-weight:600;font-size:25px">
         <p>Clustering communities on web crawl data</p>
-        <p>Crawlers: Oluwaseyi Talabi, M. Rafay Aleem, Prashant Rao, Nandita Dwivedi</p>
+        <p>Crawlers: Oluwaseyi Talabi, M. Rafay Aleem, Prashanth Rao, Nandita Dwivedi</p>
         <span>Github Repository: <a href="https://github.com/mrafayaleem/community-clusters" target="_blank">community-clusters</a></span>
     </div>
     <h1>Problem Definition</h1>
@@ -75,7 +75,7 @@
         <li><a href="https://spark.apache.org/docs/2.3.1/api/python/pyspark.html">
             Spark's Python API</a> for URL extraction and cleaning</li>
         <li>Amazon Web Services'<a href="https://docs.aws.amazon.com/AmazonS3/latest/dev/Welcome.html"> S3</a> interface
-            to help avoid large network file transfers of data when accessing Common Crawl data</li>
+            and its <i>boto3</i> Python client to help avoid large network file transfers of data when accessing Common Crawl data</li>
         <li><a href="https://graphframes.github.io/quick-start.html">GraphFrames</a> in PySpark to
             perform the heavy-lifting for graph analysis using example code from <a href="https://github.com/wsuen/pygotham2018_graphmining">
                 this GitHub repo</a></li>
@@ -88,13 +88,13 @@
     <h2>ETL Process</h2>
     <p>
         Since Common Crawl dataset is extremely large, it is unfeasible to store it locally for processing and extracting information.
-        To avoid this, we have used AWS S3 Boto client to stream data directly from Common Crawl buckets. This kind of streaming allows
+        To avoid this, we used AWS S3 Boto client to stream data directly from Common Crawl buckets. This kind of streaming allows
         us to process data in chunks without causing CPU or memory to be a bottleneck. We feed this stream to a WARC parser which processes
-        each record that is a HTTP response type and further extracts parent and child hrefs. In this process we also make sure that any child
-        links lying under the parent domain are removed to avoid any skewness in our analysis.
+        each record that is a HTTP response type and further extracts parent and child hrefs. During this process, we also ensure that any child
+        links lying under the parent domain are removed to avoid any skew in our analysis.
     </p>
     <p>
-        For the ETL process, we have leveraged mapPartitionsWithIndex instead of map. The reason for this is to optimize S3 downloads
+        For the ETL process, we leverage <i>mapPartitionsWithIndex</i> instead of <i>map</i>>. The reason for this is to optimize S3 downloads
         over partitions rather than performing it for every function call of the map operation. mapPartitionsWithIndex and mapPartitions
         allow us to limit this download operation per partition and hence avoid network congestion.
     </p>
@@ -138,7 +138,6 @@
         we can perform graph analysis. We use PySpark's GraphFrame module to condense and filter information in the DataFrames to edges
         and vertices, following which we can run clustering analyses on them.
     </p>
-
 
 
     <h2>Label Propagation Analysis</h2>
@@ -218,60 +217,128 @@
     </p>
 
     <h1>Results</h1>
-    Once we ran our LPA analysis using PySpark GraphFrames, we pipe a condensed version of the output to a JSON file, which is used
-    as input to D3 for graph visualization.
-    <h2>Force Clustering in D3</h2>
-    D3 has some very useful utilities to help visualize graph structures. One technique that proved useful in our analysis was
-    <a href="https://github.com/d3/d3-force">"force-directed graphs"</a>. In this approach, we run a simple physics emulator for
-    positioning the vertices of the graph visually such that "forces" exist between elements. Elements that are closely connected in
-    the graph (i.e. share the same label from LPA) attract one another, whereas elements that are very different in their labels repel
-    one another. Visualizing the graph this way allows us to more easily pick up and identify communities of interest.
-    For example, domain names like "facebook.com" and "twitter.com" are more heavily connected to other domains, and these vertices
-    form central points in the graph, which is easily visible upon prelimilary inspection.
-    <br>
+    <p>
+        Label propagation analysis begins by assigning a unique random label to each and every domain name (which form nodes in our graph). 
+        As the LPA iterations progress, each node takes on the label of its nearest neighbors based on the similarity of their children. The 
+        intrinsic nature of the parent-child relationships results in the labels achieving "convergence", i.e. after a few iterations, all nodes 
+        that are similar take on the labels of their neighbors, and once clusters are formed, the labels do not update any further. Once we run our LPA analysis using PySpark GraphFrames, we pipe a condensed version of the output to a JSON file, which is used
+        as input to D3 for graph visualization.
+    </p>
+    <p>
+        D3 has some very useful utilities to help visualize graph structures. One technique that proved useful in our analysis was
+        <a href="https://github.com/d3/d3-force">"force-directed graphs"</a>. In this approach, we run a simple physics emulator for
+        positioning the vertices of the graph visually such that "forces" exist between elements. Elements that are closely connected in
+        the graph (i.e. share the same label from LPA) attract one another, whereas elements that are very different in their labels repel
+        one another. Visualizing the graph this way allows us to more easily pick up and identify communities of interest.
+        For example, domain names like "facebook.com" and "twitter.com" are more heavily connected to other domains, and these vertices
+        form central points in the graph, which is easily visible upon prelimilary inspection.
+    </p>
+    <p>
+        D3 utilizes the label information from the LPA and runs a "force simulation", where nodes with similar labels "attract" one other, 
+        and nodes with very different labels "repel" one another. This is a good way to visualize how similar or different to clusters are - 
+        clusters that are close to one another are very similar, and those that are far apart (or are not connected at all) are very different. 
+    </p>
 
-    <h3>Label Propagation:</h3>
+    <h2>Example: Shopping Domains</h2>
+    <p>
+        One case that we looked at involved studying the relationship between shopping website domains. Consider three shopping domains: 
+        Amazon, eBay and Etsy. These are three well-known online vendors that sell a variety of products. We wanted to explore how these particular
+        domain names form clusters, and if so, how they are connected to each other. Our reasoning is that small-scale vendors that sell their 
+        products on Etsy would not always do so on Amazon, and this should be apparent when looking at the clusters.
+    </p>
+
+
     <div class="lpa row">
         <p><b> Shopping Domains (etsy, ebay, amazon)</b></p>
         <div class="column">
-            <span>May 2018</span>
-            <img src="public/images/shopping-lpa-may.png" style="width:630px;height:600px">
-            <span>To view an interactive display kindly click <a href="/public/index-shopping-may.html" target="_blank"><b>here</b></a></span>
+            <span>May 2018</span><br/>
+            <img src="public/images/shopping-lpa-may.png" style="width:630px;height:500px"><br/>
+            <span>To view an interactive display of this plot, click <a href="/public/index-shopping-may.html" target="_blank"><b>here</b></a></span>
         </div>
         <div class="column">
-            <span>October 2018</span>
-            <img src="public/images/shopping-lpa-oct.png" style="width:630px;height:600px;margin-top:8px">
-            <span>To view an interactive display kindly click <a href="/public/index-shopping-oct.html" target="_blank"><b>here</b></a></span>
+            <span>October 2018</span><br/>
+            <img src="public/images/shopping-lpa-oct.png" style="width:630px;height:500px;margin-top:8px"><br/>
+            <span>To view an interactive display of this plot, click <a href="/public/index-shopping-oct.html" target="_blank"><b>here</b></a></span>
         </div>
-    </div>
+    </div><br/>
+
+    <p>
+        We show the results for the shopping domains (fully interactive animations are linked below each image) - the data used for each case 
+        was crawled a few months apart in 2018. It is clear that Amazon forms the biggest
+        cluster, which makes sense considering Amazon's scale of web presence and the sheer number of online vendors who link to Amazon. What is 
+        interesting, however, is that the domain names that cluster around Etsy are quite unique, highighting that our graph is capturing something inherent 
+        in the real world - in this case vendors who sell their products on Etsy are not the same ones that also sell on Amazon. 
+    </p>
+    <p>
+        Another observation that we can make is by following the node connections from Etsy's root node in the graph, and seeing how it connects to neighboring
+        clusters. In the month of October, we can see that there are a couple of reseller web domain names that form a connection between Etsy and eBay.
+        This is interesting because it gives us information that we did not have otherwise - learning the names of resellers purely through a graph visualization
+        is a different way of gaining insights on data that is otherwise unused. One can easily imagine a use-case where a large graph mining operation 
+        could be used to decide marketing or investment strategies based on graphical analysis and visualization techniques. 
+    </p>
+
+    <h2>Example: News Domains</h2>
+    <p>
+        Another interesting use-case would be to analyze the web content and connectivity between news domains. In this case, we choose several major US
+        news outlets and see how their web presence is linked with one another. As we might expect, news organizations are tightly linked because of the 
+        multiple ways they link to each other through a variety of stories, so we would expect these clusters to be more tightly mixed up.
+    </p>
+
     <div class="lpa row">
         <p><b> News Domains (cnn, foxnews, huffingtonpost, washingtonpost, nytimes, usatoday)</b></p>
+
         <div class="column">
-            <span>May 2018</span>
-            <img src="public/images/news-lpa-may.png" style="width:630px;height:600px">
-            <span>To view an interactive display kindly click <a href="/public/index-news-may.html" target="_blank"><b>here</b></a></span>
+            <span>May 2018</span><br/>
+            <img src="public/images/news-lpa-may.png" style="width:630px;height:500px"><br/>
+            <span>To view an interactive display of this plot, click <a href="/public/index-news-may.html" target="_blank"><b>here</b></a></span>
         </div>
         <div class="column">
-            <span>October 2018</span>
-            <img src="public/images/news-lpa-oct.png" style="width:630px;height:600px;margin-top:8px">
-            <span>To view an interactive display kindly click <a href="/public/index-news-oct.html" target="_blank"><b>here</b></a></span>
+            <span>October 2018</span><br/>
+            <img src="public/images/news-lpa-oct.png" style="width:630px;height:500px;margin-top:8px"><br/>
+            <span>To view an interactive display of this plot, click <a href="/public/index-news-oct.html" target="_blank"><b>here</b></a></span>
         </div>
-    </div>
+    </div><br/>
+    <p>
+        The clusters formed by analyzing news domain URLs indeed shows the deep connectivity one might expect based on what we observe in the real world. Clusters for 
+        certain domains such as the New York Times and the Washington Post end up close to one another. CNN's parent domain appears far enough away from Fox news,
+        as one might expect; however, CNN's money (finance) page appears closer to Fox news. On inspecting these kinds of connections over longer periods of time 
+        (and with much larger amounts of data), it could be possible to gain deeper insights from such visualizations.
+    </p>
+    <p>
+        A similar technique can be extended to be used on a large list of political blogs, or fashion web pages to see if these connections show some inherent property
+        of society and politics. Graphs are indeed useful tools to study this kind of relationships. 
+    </p>
+
+    <h2>Example: University Domains</h2>
+    <p>
+        To see how our technique can apply to a range of domains, we also tried a case that studied university domains as shown below. Universities are fundamentally 
+        different in the sense that they do not link to each other as frequently as news domains might do. In addition, the traffic to university web pages and the 
+        number of external links that point to a university web page may not be as large enough to form distinct cluster. On analyzing a subset of universities on the 
+        US east-coast, this is indeed what we observe. The clusters formed are far less dense, meaning that there aren't anywhere near as many web pages that point
+        to university domains as other domains, such as shopping or news. Some of this could be attributed to the fact that we are only looking at a subset of the
+        crawl data, however, there might be some inherent pattern based on the clusters we visualize.
+    </p>
+
     <div class="lpa row">
-        <p><b> University Domains (harvard princeto nyu cornell dartmouth brown yale)</b></p>
+        <p><b> University Domains (harvard, princeton, nyu, cornell, dartmouth, brown, yale)</b></p>
+
         <div class="column">
-            <span>May 2018</span>
-            <img src="public/images/university-lpa-may.png" style="width:630px;height:600px">
-            <span>To view an interactive display kindly click <a href="/public/index-university-may.html" target="_blank"><b>here</b></a></span>
+            <span>May 2018</span><br/>
+            <img src="public/images/university-lpa-may.png" style="width:630px;height:500px"><br/>
+            <span>To view an interactive display of this plot, click <a href="/public/index-university-may.html" target="_blank"><b>here</b></a></span>
         </div>
         <div class="column">
-            <span>October 2018</span>
-            <img src="public/images/university-lpa-oct.png" style="width:630px;height:600px;margin-top:8px">
-            <span>To view an interactive display kindly click <a href="/public/index-university-oct.html" target="_blank"><b>here</b></a></span>
+            <span>October 2018</span><br/>
+            <img src="public/images/university-lpa-oct.png" style="width:630px;height:500px;margin-top:8px"><br/>
+            <span>To view an interactive display of this plot, click <a href="/public/index-university-oct.html" target="_blank"><b>here</b></a></span>
         </div>
     </div>
 
     <h3>Page Rank:</h3>
+    <p>
+        In addition to running LPA on the data, we also apply the PareRank algorithm to find which are the most dominant communities in each month's analysis.
+        Since we are looking at TLDs and not parent domains, we are able to obtain some useful geographical information on domains from multiple countries. 
+    </p>
     <div class="pagerank row">
         <p><b> Shopping Domains (etsy, ebay, amazon)</b></p>
         <div class="column">
@@ -295,7 +362,7 @@
         </div>
     </div>
        <div class="pagerank row">
-        <p><b> University Domains (harvard princeto nyu cornell dartmouth brown yale)</b></p>
+        <p><b> University Domains (harvard, princeton, nyu, cornell, dartmouth, brown, yale)</b></p>
         <div class="column">
             <span>May 2018</span>
             <img src="public/images/university-rank-may.png" style="width:100%;height:100%;margin-top:8px">
@@ -310,7 +377,8 @@
     <p>
         Common Crawl data is a very highly valuable and open data source for various aspects of the internet, and has the potential to yield many useful insights aside
         from the aspects we looked at in this project. Over the course of our work, we had to learn about various aspects of big data systems, cloud storage, encoding styles
-        and also how to extract relevant and meaningful data from large datasets. We used a lot of example code that is available for similar tasks, but customized it to suit
+        and also how to extract relevant and meaningful data from large datasets. We had to be creative about how to visualize the graphs in an aesthetically pleasing way
+        while yielding useful visual insights through an interactive web interface. We used a lot of example code that is available for similar tasks, but customized it to suit
         our goals and published our code openly on GitHub.
     </p>
 
@@ -323,6 +391,27 @@
         could possibly handle large graph loads better than our approach, such as <a href="http://www.graphviz.org/">Graphviz</a> and <a href="http://sigmajs.org/">Sigma.js</a>.
         The graph processing and visualization space is continuously evolving, and we aim to keep a close watch on these tools and techniques for our future careers.
     </p>
+
+    <h1>Summary Score</h1>
+    <p>
+        Based on the project requirements, we include the below self-evaluation of our efforts for this project. We spent a good deal of effort in developing an ETL pipeline 
+        using a combination of S3, boto3 and parquet formats to minimize local storage requirements. We also looked at how our approach would scale for much
+        larger datasets, and implemented our PySpark routines accordingly. Along the way, we learned a good deal about technologies such as Spark GraphFrames, S3, and interactive 
+        visualization techniques for graphs in D3. 
+    </p>
+
+    <table style="width:35%">
+        <tr><th>Data acquisition</th><th>3</th></tr>
+        <tr><th>ETL</th><th>3</th></tr>
+        <tr><th>Problem Motivation</th><th>2</th></tr>
+        <tr></tr>    <th>Algorithmic work</th><th>1</th></tr>
+        <tr></tr>    <th>Bigness/parallelization</th><th>3</th></tr>
+        <tr><th>UI</th><th>3</th></tr>
+        <tr><th>Visualization</th><th>3</th></tr>
+        <th>Technologies</th><th>2</th></tr>
+        <tr><th><i>Total</i></th><th>20</th></tr>
+        
+    </table>
 
 
 </body>
