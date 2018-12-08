@@ -156,7 +156,7 @@ def main(input_file, output_file, file_system, to_crawl_data):
     df = df.select(
         '*', url_to_domain('childTLD').alias('childDomain'), url_to_domain('parentTLD').alias('parentDomain'))
 
-    df.write.format("parquet").saveAsTable(output_file)
+    df.write.format("parquet").saveAsTable(output_file, path="../data/ETLout/{}".format(output_file))
 
 
 if __name__ == '__main__':
