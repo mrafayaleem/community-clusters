@@ -1,5 +1,3 @@
-<!-- python -m SimpleHTTPServer/ python3 -m http.server //-->
-
 <!DOCTYPE html>
 
 <head>
@@ -8,14 +6,18 @@
 
     <!-- JavaScript Libraries //-->
     <script src="http://d3js.org/d3.v3.min.js"></script>
-    <script type="text/javascript" src="draw_graphs.js"></script>
     <!-- CSS Style //-->
     <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,900|Source+Code+Pro:300">
-    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" type="text/css" href="./public/style.css">
 
 </head>
 
 <body>
+    <div style="text-align:center;font-weight:600;">
+        <p>Clustering communities on web crawl data</p>
+        <p>Crawlers: Oluwaseyi Talabi, M. Rafay Aleem, Prashant Rao, Nandita Dwivedi</p>
+        <span>Github Repository: <a href="https://github.com/mrafayaleem/community-clusters" target="_blank">community-clusters</a></span>
+    </div>
     <h1>Problem Definition</h1>
     <p>
         In our final project, we look to apply big data techniques to perform large-scale
@@ -70,7 +72,7 @@
         of blogs and research papers that tackle the problem of graph analysis.
 
     <ul>
-        <li><a href="spark.apache.org/docs/2.3.1/api/python/pyspark.html">
+        <li><a href="https://spark.apache.org/docs/2.3.1/api/python/pyspark.html">
             Spark's Python API</a> for URL extraction and cleaning</li>
         <li>Amazon Web Services'<a href="https://docs.aws.amazon.com/AmazonS3/latest/dev/Welcome.html"> S3</a> interface
             to help avoid large network file transfers of data when accessing Common Crawl data</li>
@@ -229,15 +231,58 @@
     <br>
 
     <h3>Label Propagation:</h3>
-    <div align="center" id="lpa" class="svg-container"></div>
+    <div class="lpa row">
+        <div class="lpa-column">
+            <span>Shopping Domains: May 2018</span>
+            <img src="public/files/shopping-lpa-may.png" style="width:630px;height:600px">
+            <span>To view an interactive display kindly click <a href="/public/index-shopping-may.html" target="_blank"><b>here</b></a></span>
+        </div>
+        <div class="lpa-column">
+            <span>Shopping Domains: October 2018</span>
+            <img src="public/files/shopping-lpa-oct.png" style="width:630px;height:600px;margin-top:8px">
+            <span>To view an interactive display kindly click <a href="/public/index-shopping-oct.html" target="_blank"><b>here</b></a></span>
+        </div>
+    </div>
+    <div class="lpa row">
+        <div class="lpa-column">
+            <span>News Domains: May 2018</span>
+            <img src="public/files/news-lpa-may.png" style="width:630px;height:600px">
+            <span>To view an interactive display kindly click <a href="/public/index-news-may.html" target="_blank"><b>here</b></a></span>
+        </div>
+        <div class="lpa-column">
+            <span>News Domains: October 2018</span>
+            <img src="public/files/news-lpa-oct.png" style="width:630px;height:600px;margin-top:8px">
+            <span>To view an interactive display kindly click <a href="/public/index-news-oct.html" target="_blank"><b>here</b></a></span>
+        </div>
+    </div>
+    <div class="lpa row">
+        <div class="lpa-column">
+            <span>University Domains: May 2018</span>
+            <img src="public/files/university-lpa-may.png" style="width:630px;height:600px">
+            <span>To view an interactive display kindly click <a href="/public/index-university-may.html" target="_blank"><b>here</b></a></span>
+        </div>
+        <div class="lpa-column">
+            <span>University Domains: October 2018</span>
+            <img src="public/files/university-lpa-oct.png" style="width:630px;height:600px;margin-top:8px">
+            <span>To view an interactive display kindly click <a href="/public/index-university-oct.html" target="_blank"><b>here</b></a></span>
+        </div>
+    </div>
 
     <h3>Page Rank:</h3>
-    <div align="center" id="pagerank" class="svg-container"></div>
-
-    <!-- <script>
-        d3.json("community-cluster.json", drawLPAGraph);
-        d3.json("community-cluster.json", drawPagerankGraph);
-    </script> -->
+    <div class="pagerank row">
+        <div class="rank-column">
+            <span>Shopping Domains: May 2018</span>
+            <img src="public/files/shopping-pagerank-may.png" style="width:100%;height:100%;margin-top:8px">
+        </div>
+        <div class="rank-column">
+            <span>News Domains: May 2018</span>
+            <img src="public/files/news-pagerank-oct.png" style="width:100%;height:100%;margin-top:8px">
+        </div>
+        <div class="rank-column">
+            <span>University Domains: May 2018</span>
+            <img src="public/files/university-pagerank-oct.png" style="width:100%;height:100%;margin-top:8px">
+        </div>
+    </div>
 
     <h1>Summary and Further Work</h1>
     <p>

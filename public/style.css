@@ -70,3 +70,25 @@ b {
     top: 0;
     left: 0;
 }
+
+.lpa-column {
+    float: left;
+    width: 45%;
+    padding: 0px 30px 0px 30px;
+}
+
+.rank-column {
+    float: left;
+    width: 30%;
+    padding: 0px 20px 0px 20px;
+}
+
+.row {
+    padding: 10px;
+}
+
+.row::after {
+    content: "";
+    clear: both;
+    display: table;
+}

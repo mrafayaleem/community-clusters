@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+    .link {
+        stroke: #c1c1c1;
+        stroke-width: 2px;
+        pointer-events: all;
+    }
+
+    .node circle {
+        pointer-events: all;
+        stroke: #777;
+        stroke-width: 1px;
+    }
+
+    .svg-container {
+        display: inline-block;
+        position: relative;
+        width: 100%;
+        padding-bottom: 10px;
+        vertical-align: top;
+        overflow: hidden;
+    }
+
+    .svg-content {
+        display: inline-block;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+    div.tooltip {
+        position: absolute;
+        background-color: white;
+        max-width: 200px;
+        height: auto;
+        padding: 1px;
+        border-style: solid;
+        border-radius: 4px;
+        border-width: 1px;
+        box-shadow: 3px 3px 10px rgba(0, 0, 0, .5);
+        pointer-events: none;
+    }
+</style>
+
+<body>
+    <div align="center" id="lpa" class="svg-container"></div>
+    <div align="center" id="pagerank" class="svg-container"></div>
+</body>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script type="text/javascript" src="js/draw_graphs.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script>
+    var color = d3.scaleOrdinal(d3.schemeCategory20);
+
+    var tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+
+    d3.json("files/community-cluster-1-shopping-may.json", function (error, graph) {
+        if (error) throw error;
+        const width = 960;
+        const height = 700;
+
+        const svg = d3.select("#lpa").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        // draw plot background
+        svg.append("rect")
+            .attr("width", width)
+            .attr("height", height)
+            .style("fill", "#f6f6f6");
+        
+        const simulation = d3.forceSimulation()
+            .nodes(graph.nodes)
+            .force('link', d3.forceLink().distance(linkDistance).id(d => d.id))
+            .force('charge', d3.forceManyBody().strength(-1))
+            .force('center', d3.forceCenter(width / 2, height / 2))
+            .on('tick', ticked);
+
+        simulation.force('link')
+            .links(graph.links);
+
+        let link = svg.selectAll('line')
+            .data(graph.links)
+            .enter().append('line');
+
+        link
+            .attr('class', 'link')
+            .on('mouseover.tooltip', function (d) {
+                tooltip.transition()
+                    .duration(300)
+                    .style("opacity", .8);
+                tooltip.html("Source:" + d.source.domain +
+                        "<p/>Target:" + d.target.domain)
+                    .style("left", (d3.event.pageX) + "px")
+                    .style("top", (d3.event.pageY + 10) + "px");
+            })
+            .on("mouseout.tooltip", function () {
+                tooltip.transition()
+                    .duration(100)
+                    .style("opacity", 0);
+            })
+            .on('mouseout.fade', fade(1))
+            .on("mousemove", function () {
+                tooltip.style("left", (d3.event.pageX) + "px")
+                    .style("top", (d3.event.pageY + 10) + "px");
+            });;
+
+        let node = svg.selectAll('.node')
+            .data(graph.nodes)
+            .enter().append('g')
+            .attr('class', 'node')
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+
+        node.append('circle')
+            .attr('r', 4)
+            .attr("fill", function (d) {
+                return color(d.community);
+            })
+            .on('mouseover.tooltip', function (d) {
+                tooltip.transition()
+                    .duration(300)
+                    .style("opacity", .8);
+                tooltip.html("Domain: " + d.domain + "<p/>Community: " + d.community)
+                    .style("left", (d3.event.pageX) + "px")
+                    .style("top", (d3.event.pageY + 10) + "px");
+            })
+            .on('mouseover.fade', fade(0.1))
+            .on("mouseout.tooltip", function () {
+                tooltip.transition()
+                    .duration(100)
+                    .style("opacity", 0);
+            })
+            .on('mouseout.fade', fade(1))
+            .on("mousemove", function () {
+                tooltip.style("left", (d3.event.pageX) + "px")
+                    .style("top", (d3.event.pageY + 10) + "px");
+            })
+            .on('dblclick', releasenode)
+
+        function ticked() {
+            link
+                .attr('x1', d => d.source.x)
+                .attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x)
+                .attr('y2', d => d.target.y);
+
+            node
+                .attr('transform', d => `translate(${d.x},${d.y})`);
+        }
+        
+        function linkDistance(d) {
+            return (d.source.community == d.target.community) ? 20 : 30;
+        }
+
+        // drag and update layout
+        function dragstarted(d) {
+            if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(d) {
+            d.fx = d3.event.x;
+            d.fy = d3.event.y;
+        }
+
+        function dragended(d) {
+            if (!d3.event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        function releasenode(d) {
+            d.fx = null;
+            d.fy = null;
+        }
+
+        const linkedByIndex = {};
+        graph.links.forEach(d => {
+            linkedByIndex[`${d.source.index},${d.target.index}`] = 1;
+        });
+
+        function isConnected(a, b) {
+            return linkedByIndex[`${a.index},${b.index}`] || linkedByIndex[`${b.index},${a.index}`] || a.index ===
+                b.index;
+        }
+
+        function fade(opacity) {
+            return d => {
+                node.style('stroke-opacity', function (o) {
+                    const thisOpacity = isConnected(d, o) ? 1 : opacity;
+                    this.setAttribute('fill-opacity', thisOpacity);
+                    return thisOpacity;
+                });
+
+                link.style('stroke-opacity', o => (o.source === d || o.target === d ? 1 : opacity));
+
+            };
+        }
+
+    })
+    d3.csv("../shopping/rankings-may/rankings-may.csv", drawPagerankGraph);
+</script>
