@@ -56,9 +56,9 @@ Then open:
 `localhost:8000/public/index.html` in the browser
 TODO:
 
-- [Done] Extend `process_warcs` to S3
-- [ ] Add `requirements.txt`
-- [ ] use distinct in parent/child domains for analysis
-- [ ] analyse the popularity of these domains
-- [ ] analysis around the paths of the popular domains
-- [ ] visualize the popularity 
+- [x] Extend `process_warcs` to S3
+- [x] Add `requirements.txt`
+- [x] use distinct in parent/child domains for analysis
+- [x] analyse the popularity of these domains
+- [x] analysis around the paths of the popular domains
+- [x] visualize the popularity 
