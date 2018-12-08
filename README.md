@@ -39,4 +39,4 @@ environment to be configured on the system:
     export SPARK_HOME=/home/<user>/spark-2.3.1-bin-hadoop2.7/
     export PYSPARK_PYTHON=python3
     
-Open and run the ```graph_mining.ipynb``` notebook in a shell that used the above commands, so that the shell knows wher eto find PySpark on your system. 
+Open and run the ```graph_mining.ipynb``` notebook in a shell that used the above commands, so that the shell knows where to find PySpark on your system. 
