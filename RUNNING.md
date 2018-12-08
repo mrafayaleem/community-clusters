@@ -30,3 +30,25 @@ cd  bootstrap
 cd  bootstrap
 ./etl.sh execute input_paths/may.warc.paths may s3 commoncrawl 10
 ```
+
+#####Steps to run Analysis and generate Visualization files:
+
+This process should be executed from the root directory.
+
+`autoAnalysis.sh` takes 3 arguments as follows:
+1. Category of focus e.g shopping
+2. Focus Domains e.g 'etsy ebay amazon'
+3. Month e.g may
+
+#####To run analysis and generate visualization files:
+```
+./autoAnalysis.sh shopping  'etsy ebay amazon' may
+```
+
+#####To view results in browswer run:
+```
+python3 -m http.server 8080
+```
+
+Then navigate to `public/index-` + category + `-` + month + `.html` on your browser
+e.g localhost:8080/public/index-shopping-may.html

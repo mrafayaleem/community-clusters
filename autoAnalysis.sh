@@ -15,7 +15,7 @@ wait $!
 echo "Concatenating for D3"
 
 echo `cat data/AnalysisOut/$category/rankings-$month/part-* > data/htmlInput/$month.csv`
-printf '%s\n' "id,name,label,pagerank" | cat - data/htmlInput/$month.csv > data/htmlInput/rankings-$month.csv
+printf '%s\n' "id,name,label,pagerank" | cat - data/htmlInput/$month.csv > data/htmlInput/rankings-$category-$month.csv
 rm data/htmlInput/$month.csv
 
 mkdir -p data/D3Input/$category
